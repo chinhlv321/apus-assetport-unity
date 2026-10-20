@@ -1,0 +1,26 @@
+{
+    "name": "Apus.AssetPort.Editor",
+    "rootNamespace": "Apus.AssetPort",
+    "references": [
+        "Unity.Addressables",
+        "Unity.Addressables.Editor",
+        "Unity.ResourceManager"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.addressables",
+            "expression": "2.0.0",
+            "define": "APUS_ADDRESSABLES_2"
+        }
+    ],
+    "noEngineReferences": false
+}

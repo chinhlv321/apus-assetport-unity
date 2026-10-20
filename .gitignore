@@ -1,0 +1,34 @@
+# Unity
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Bb]uild/
+/[Bb]uilds/
+/MemoryCaptures/
+/Recordings/
+
+# Addressables build output (upload qua Apus > Build & Upload, không commit)
+/ServerData/
+/Assets/StreamingAssets/aa/
+/Assets/StreamingAssets/aa.meta
+
+# IDE / generated
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.DS_Store
+Thumbs.db

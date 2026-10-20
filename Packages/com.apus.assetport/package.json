@@ -1,0 +1,19 @@
+{
+  "name": "com.apus.assetport",
+  "displayName": "Apus Asset Port",
+  "version": "1.1.0",
+  "unity": "2021.3",
+  "description": "Ghi apus-manifest.json sau mỗi lần build Addressables, kiểm tra cấu hình và build + upload content lên Apus Asset Port (Cloudflare R2).",
+  "author": {
+    "name": "Apus"
+  },
+  "dependencies": {
+    "com.unity.addressables": "1.21.19"
+  },
+  "keywords": [
+    "addressables",
+    "cloudflare",
+    "r2",
+    "upload"
+  ]
+}
