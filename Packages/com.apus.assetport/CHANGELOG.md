@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.0] - 2026-10-30
+
+- Hỗ trợ platform **WebGL**: manifest nhận `WebGL`, cửa sổ Build & Upload có thêm ô chọn WebGL (cần portal đã có migration 0004).
+
 ## [1.1.0] - 2026-10-20
 
 - Thêm **Apus > Setup Addressables…**: dán JSON "Cấu hình nhanh" từ trang Settings của portal (hoặc nhập tay) → tạo/cập nhật 3 profile `dev`/`staging`/`prod` (`Remote.BuildPath`, `Remote.LoadPath`, `Apus.CatalogLoadPath`), cấu hình remote catalog, Player Version Override `content`, Build with Player, Fail Build, Content State Build Path; tuỳ chọn sửa group theo chuẩn và bật *Only update catalogs manually*. API cho script/CI: `AddressablesSetup.Apply(PortalSetupConfig, Options)`.

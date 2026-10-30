@@ -14,10 +14,10 @@ Hướng dẫn đầy đủ (cấu hình Addressables, code client, quy trình r
 Thêm vào `Packages/manifest.json`:
 
 ```json
-"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.1.0"
+"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.2.0"
 ```
 
-Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.1.0`).
+Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.2.0`).
 
 ## Thiết lập
 
