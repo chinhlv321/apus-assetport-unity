@@ -189,6 +189,10 @@ namespace Apus.AssetPort
             settings.OverridePlayerVersion = "content";
             settings.BuildAddressablesWithPlayerBuild = AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer;
             settings.CheckForContentUpdateRestrictionsOption = CheckForContentUpdateRestrictionsOptions.FailBuild;
+            // A custom path would leave the existing content state behind: say so, the next update needs it.
+            if (!string.IsNullOrEmpty(settings.ContentStateBuildPath))
+                log.Add("⚠ Content State Build Path '" + settings.ContentStateBuildPath + "' đổi về mặc định Assets/AddressableAssetsData/<platform>: " +
+                        "chuyển addressables_content_state.bin sang đó (và commit) trước khi build content update, nếu không update sẽ báo thiếu content state.");
             settings.ContentStateBuildPath = ""; // default: Assets/AddressableAssetsData/<platform>, commit it
             log.Add("Remote catalog: bật, Build Path = " + RemoteBuildPathVar + ", Load Path = " + CatalogLoadPathVar);
             log.Add("Player Version Override = content, Build Addressables on Player Build = bật, Check for Update Issues = Fail Build");

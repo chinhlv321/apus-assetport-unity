@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.2] - 2026-10-30
+
+- Build & Upload: group nháp hết hạn hoặc bị xoá (404) thì hướng dẫn bấm "Đóng / build mới" thay vì để Thử lại mãi.
+- Setup Addressables: cảnh báo khi đổi Content State Build Path tuỳ chỉnh về mặc định (cần chuyển `addressables_content_state.bin`).
+
 ## [1.2.1] - 2026-10-30
 
 - Dọn file cũ chỉ khi thư mục remote tên đúng `[BuildTarget]`. Trước đây thư mục khác cũng bị dọn từ lần build thứ hai (vì manifest đã được ghi ở lần đầu), có thể xoá file không liên quan.
