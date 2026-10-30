@@ -331,12 +331,13 @@ namespace Apus.AssetPort
             return e == null ? "lỗi không rõ" : e.Message;
         }
 
-        static BuildTarget ParseTarget(string platform)
+        internal static BuildTarget ParseTarget(string platform)
         {
             switch (platform)
             {
                 case "Android": return BuildTarget.Android;
                 case "iOS": return BuildTarget.iOS;
+                case "WebGL": return BuildTarget.WebGL;
                 default: throw new ArgumentException("Platform không hỗ trợ: " + platform);
             }
         }

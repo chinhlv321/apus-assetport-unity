@@ -53,7 +53,7 @@ Chi tiết từng setting và lý do: [README mục 6](../../README.md#6-cấu-h
 
 - **Apus > Setup Addressables…**: cấu hình profile và catalog bằng JSON từ portal (xem trên).
 - **Apus > Build & Upload…**
-  - Chọn Android/iOS, tên group, ghi chú và kiểu build:
+  - Chọn Android/iOS/WebGL, tên group, ghi chú và kiểu build:
     - *Content Update* (mặc định): Update a Previous Build, đọc `addressables_content_state.bin` trong `Assets/`.
     - *Baseline*: New Build. Chỉ dùng khi phát hành bản app mới.
   - Với mỗi platform, công cụ switch platform (tự chạy tiếp sau khi Unity reload), build, rồi upload vào **cùng một group nháp**.
@@ -91,7 +91,7 @@ Portal dùng file này để biết platform, appVersion và danh sách file c�
 |---|---|
 | `schema` | `1` |
 | `project` | slug trong Project Settings |
-| `platform` | `Android` / `iOS` (đúng tên `[BuildTarget]`) |
+| `platform` | `Android` / `iOS` / `WebGL` (đúng tên `[BuildTarget]`) |
 | `appVersion` | `PlayerSettings.bundleVersion` |
 | `kind` | `baseline` (New Build / build cùng player) hoặc `update` |
 | `unityVersion`, `addressablesVersion` | version lúc build; portal chặn content update khác version với baseline |
@@ -104,7 +104,7 @@ File trong `ServerData/` mà không có tên trong manifest sẽ không được
 
 ## Dọn file cũ
 
-Sau khi manifest hợp lệ, package xoá các file trong thư mục remote mà build này không sinh ra. Package chỉ dọn khi thư mục tên đúng `[BuildTarget]` (`Android`/`iOS`) hoặc đã có `apus-manifest.json` từ lần build trước, và không bao giờ dọn thư mục gốc project, `Assets/`, `Library/`, `Packages/`… Trường hợp khác chỉ in cảnh báo.
+Sau khi manifest hợp lệ, package xoá các file trong thư mục remote mà build này không sinh ra. Package chỉ dọn khi thư mục tên đúng `[BuildTarget]` (`Android`/`iOS`/`WebGL`) hoặc đã có `apus-manifest.json` từ lần build trước, và không bao giờ dọn thư mục gốc project, `Assets/`, `Library/`, `Packages/`… Trường hợp khác chỉ in cảnh báo.
 
 ## Upload
 

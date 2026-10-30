@@ -10,7 +10,7 @@ namespace Apus.AssetPort
     /// <summary>Constants mirrored by hand from <c>shared/src/index.ts</c>.</summary>
     public static class PortalConstants
     {
-        public static readonly string[] Platforms = { "Android", "iOS" };
+        public static readonly string[] Platforms = { "Android", "iOS", "WebGL" };
         public const string KindBaseline = "baseline";
         public const string KindUpdate = "update";
 

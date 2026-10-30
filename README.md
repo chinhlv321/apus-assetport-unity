@@ -1,6 +1,6 @@
 # Apus Asset Port – Unity
 
-Package Unity **`com.apus.assetport`** và một **game mẫu** chạy được ngay, để đưa Addressables content (Android + iOS) lên **Apus Asset Port**. Apus Asset Port là hệ thống host content trên Cloudflare R2, có trang quản trị web để publish và rollback content mà không phải build lại app.
+Package Unity **`com.apus.assetport`** và một **game mẫu** chạy được ngay, để đưa Addressables content (Android, iOS, WebGL) lên **Apus Asset Port**. Apus Asset Port là hệ thống host content trên Cloudflare R2, có trang quản trị web để publish và rollback content mà không phải build lại app.
 
 | Thư mục | Nội dung |
 |---|---|

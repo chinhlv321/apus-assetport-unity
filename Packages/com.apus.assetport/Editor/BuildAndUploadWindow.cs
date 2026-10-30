@@ -17,6 +17,7 @@ namespace Apus.AssetPort
 
         [SerializeField] bool m_Android = true;
         [SerializeField] bool m_IOS = true;
+        [SerializeField] bool m_WebGL;
         [SerializeField] int m_Mode;
         [SerializeField] string m_GroupName = "";
         [SerializeField] string m_Note = "";
@@ -79,6 +80,7 @@ namespace Apus.AssetPort
             EditorGUILayout.LabelField("Platform", EditorStyles.boldLabel);
             m_Android = EditorGUILayout.ToggleLeft("Android", m_Android);
             m_IOS = EditorGUILayout.ToggleLeft("iOS", m_IOS);
+            m_WebGL = EditorGUILayout.ToggleLeft("WebGL", m_WebGL);
 
             EditorGUILayout.Space();
             m_Mode = EditorGUILayout.Popup("Kiểu build", m_Mode, k_ModeLabels);
@@ -95,7 +97,7 @@ namespace Apus.AssetPort
             DrawCredentials();
 
             EditorGUILayout.Space();
-            using (new EditorGUI.DisabledScope(!m_Android && !m_IOS))
+            using (new EditorGUI.DisabledScope(!m_Android && !m_IOS && !m_WebGL))
             {
                 if (GUILayout.Button("Build & Upload", GUILayout.Height(32))) StartJob();
             }
@@ -173,6 +175,7 @@ namespace Apus.AssetPort
             var platforms = new List<string>();
             if (m_Android) platforms.Add("Android");
             if (m_IOS) platforms.Add("iOS");
+            if (m_WebGL) platforms.Add("WebGL");
 
             var errors = new List<string>();
             var problem = ApusCredentials.Problem();
@@ -181,7 +184,7 @@ namespace Apus.AssetPort
             if (string.IsNullOrWhiteSpace(m_GroupName)) errors.Add("Nhập tên group.");
             foreach (var p in platforms)
             {
-                var target = p == "iOS" ? BuildTarget.iOS : BuildTarget.Android;
+                var target = UploadJob.ParseTarget(p);
                 if (!BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(target), target))
                     errors.Add("Chưa cài module " + p + " Build Support.");
             }
