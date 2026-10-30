@@ -77,7 +77,7 @@ namespace Apus.AssetPort
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return false;
             var host = uri.Host.ToLowerInvariant();
-            return host == "localhost" || host == "127.0.0.1" || host == "[::1]" || host == "::1" || host.EndsWith(".localhost", StringComparison.Ordinal);
+            return host == "localhost" || host == "127.0.0.1" || host == "[::1]" || host == "::1";
         }
 
         public static string NormalizeUrl(string url) => (url ?? "").Trim().TrimEnd('/');

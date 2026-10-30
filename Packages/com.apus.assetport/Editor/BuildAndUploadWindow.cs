@@ -256,7 +256,9 @@ namespace Apus.AssetPort
             foreach (var line in job.log) EditorGUILayout.LabelField(line, EditorStyles.wordWrappedMiniLabel);
             EditorGUILayout.EndScrollView();
 
-            if (!job.Running && GUILayout.Button("Đóng / build mới"))
+            if (job.phase == UploadJob.Phase.Failed && GUILayout.Button("Thử lại"))
+                UploadJob.Retry();
+            else if (!job.Running && GUILayout.Button("Đóng / build mới"))
             {
                 UploadJob.Clear();
                 m_GroupName = DefaultGroupName();

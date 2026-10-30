@@ -105,8 +105,7 @@ namespace Apus.AssetPort
             outcome.OutputDir = dir;
             outcome.ManifestPath = Path.Combine(dir, PortalConstants.ManifestFileName);
             // Never leave a manifest from an older build next to new files.
-            var hadManifest = File.Exists(outcome.ManifestPath);
-            if (hadManifest) File.Delete(outcome.ManifestPath);
+            if (File.Exists(outcome.ManifestPath)) File.Delete(outcome.ManifestPath);
 
             var platform = EditorUserBuildSettings.activeBuildTarget.ToString();
             if (!PortalConstants.IsPlatform(platform))
@@ -144,7 +143,7 @@ namespace Apus.AssetPort
             // Nothing is deleted unless the build produced a valid manifest.
             if (outcome.Errors.Count > 0) return outcome;
 
-            CleanStaleFiles(dir, platform, hadManifest, outputs, outcome);
+            CleanStaleFiles(dir, platform, outputs, outcome);
 
             File.WriteAllText(outcome.ManifestPath, manifest.ToJson(), new UTF8Encoding(false));
             outcome.Written = true;
@@ -262,13 +261,14 @@ namespace Apus.AssetPort
         /// Addressables never removes bundles of older builds from ServerData. There is no pre-build hook for
         /// builds started from the Groups window, so stale files are removed after the build instead.
         /// </summary>
-        static void CleanStaleFiles(string dir, string platform, bool hadManifest, HashSet<string> outputs, ManifestOutcome outcome)
+        static void CleanStaleFiles(string dir, string platform, HashSet<string> outputs, ManifestOutcome outcome)
         {
             var unsafeReason = UnsafeToClean(dir);
             // Only a folder that is clearly this platform's remote output may be emptied: named after the build
-            // target (ServerData/[BuildTarget]) or already used by this package (had an apus-manifest.json).
-            if (unsafeReason == null && !hadManifest && !string.Equals(Path.GetFileName(dir), platform, StringComparison.Ordinal))
-                unsafeReason = "tên thư mục không phải " + platform + " và chưa từng có " + PortalConstants.ManifestFileName +
+            // target (ServerData/[BuildTarget]). An existing apus-manifest.json is no proof: it is written even when
+            // cleaning was refused.
+            if (unsafeReason == null && !string.Equals(Path.GetFileName(dir), platform, StringComparison.Ordinal))
+                unsafeReason = "tên thư mục không phải " + platform +
                                " (đặt Remote Catalog Build Path = ServerData/[BuildTarget] để package tự dọn bundle cũ)";
             if (unsafeReason != null)
             {

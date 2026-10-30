@@ -91,6 +91,23 @@ namespace Apus.AssetPort
             Fail("Đã huỷ. Group nháp (nếu đã tạo) sẽ bị portal tự xoá sau 24 giờ.");
         }
 
+        /// <summary>
+        /// Resumes a failed job with the same group: platforms already uploaded are kept. A platform whose build
+        /// succeeded (outputDir set) only re-uploads; otherwise it switches/builds again.
+        /// </summary>
+        public static void Retry()
+        {
+            if (s_State == null || s_State.phase != Phase.Failed) return;
+            s_State.error = null;
+            s_State.phase = s_State.index >= s_State.platforms.Count ? Phase.Complete
+                : !string.IsNullOrEmpty(s_State.outputDir) ? Phase.Upload
+                : Phase.Switch;
+            AddLog("Thử lại từ " + (s_State.CurrentPlatform ?? "bước chốt group") + ": " + s_State.phase);
+            Save();
+            EditorApplication.update -= Tick;
+            EditorApplication.update += Tick;
+        }
+
         public static void Clear()
         {
             if (s_State != null && s_State.Running) return;

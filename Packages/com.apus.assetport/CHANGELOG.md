@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1] - 2026-10-30
+
+- Dọn file cũ chỉ khi thư mục remote tên đúng `[BuildTarget]`. Trước đây thư mục khác cũng bị dọn từ lần build thứ hai (vì manifest đã được ghi ở lần đầu), có thể xoá file không liên quan.
+- Build & Upload: nút **Thử lại** khi job lỗi, tiếp tục cùng group và không build lại platform đã upload xong.
+- Upload: bundle trùng tên khác MD5 trên storage dừng ngay và báo tên file, không upload lại vô ích.
+- Dev local chỉ nhận đúng `localhost`, `127.0.0.1`, `[::1]` (khớp portal); bỏ `*.localhost`.
+
 ## [1.2.0] - 2026-10-30
 
 - Hỗ trợ platform **WebGL**: manifest nhận `WebGL`, cửa sổ Build & Upload có thêm ô chọn WebGL (cần portal đã có migration 0004).

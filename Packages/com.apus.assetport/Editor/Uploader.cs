@@ -187,12 +187,12 @@ namespace Apus.AssetPort
                 progress.FileDone(f.size);
             }
 
-            // Step 5: verify, one re-upload round for missing/mismatched.
+            // Step 5: verify (mismatch fails at once), one re-upload round for missing.
             progress.SetStage(manifest.platform + ": verify");
             var bad = await VerifyAll(client, releaseId, toVerify, ct).ConfigureAwait(false);
             if (bad.Count > 0)
             {
-                log?.Invoke(manifest.platform + ": " + bad.Count + " bundle chưa verify được, upload lại: " + string.Join(", ", bad.Take(10)));
+                log?.Invoke(manifest.platform + ": " + bad.Count + " bundle còn thiếu trên storage, upload lại: " + string.Join(", ", bad.Take(10)));
                 var retryNames = new List<string>();
                 foreach (var batch in Batches(bad, PortalConstants.PresignBatch))
                 {
@@ -205,7 +205,7 @@ namespace Apus.AssetPort
                 }
                 var stillBad = await VerifyAll(client, releaseId, retryNames, ct).ConfigureAwait(false);
                 if (stillBad.Count > 0)
-                    throw new PortalException(0, "Verify thất bại sau khi upload lại (file trên storage khác MD5 hoặc vẫn thiếu): " + string.Join(", ", stillBad));
+                    throw new PortalException(0, "Verify thất bại sau khi upload lại (file vẫn thiếu trên storage): " + string.Join(", ", stillBad));
             }
             return result;
         }
@@ -366,14 +366,19 @@ namespace Apus.AssetPort
 
         static async Task<List<string>> VerifyAll(PortalClient client, long releaseId, List<string> names, CancellationToken ct)
         {
-            var bad = new List<string>();
+            var missing = new List<string>();
+            var mismatched = new List<string>();
             foreach (var batch in Batches(names.Distinct(StringComparer.Ordinal).ToList(), PortalConstants.VerifyBatch))
             {
                 var v = await WithRetryValue(() => client.Verify(releaseId, batch, ct), ct).ConfigureAwait(false);
-                bad.AddRange(v.Missing);
-                bad.AddRange(v.Mismatched);
+                missing.AddRange(v.Missing);
+                mismatched.AddRange(v.Mismatched);
             }
-            return bad.Distinct().ToList();
+            // Re-uploading cannot fix a mismatch: PUT uses If-None-Match: * and gets 412 while the object exists.
+            if (mismatched.Count > 0)
+                throw new PortalException(0, "Bundle cùng tên nhưng khác MD5 đã có trên storage: " + string.Join(", ", mismatched.Distinct()) +
+                                             ". Build không ổn định giữa các máy; rebuild trên cùng máy hoặc đổi nội dung bundle.");
+            return missing.Distinct().ToList();
         }
 
         /// <summary>1 attempt + up to 3 retries with backoff, for network errors, timeouts, 5xx, 408 and 429 only.</summary>

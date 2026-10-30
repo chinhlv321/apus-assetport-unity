@@ -14,10 +14,10 @@ Hướng dẫn đầy đủ (cấu hình Addressables, code client, quy trình r
 Thêm vào `Packages/manifest.json`:
 
 ```json
-"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.2.0"
+"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.2.1"
 ```
 
-Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.2.0`).
+Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.2.1`).
 
 ## Thiết lập
 
@@ -104,7 +104,7 @@ File trong `ServerData/` mà không có tên trong manifest sẽ không được
 
 ## Dọn file cũ
 
-Sau khi manifest hợp lệ, package xoá các file trong thư mục remote mà build này không sinh ra. Package chỉ dọn khi thư mục tên đúng `[BuildTarget]` (`Android`/`iOS`/`WebGL`) hoặc đã có `apus-manifest.json` từ lần build trước, và không bao giờ dọn thư mục gốc project, `Assets/`, `Library/`, `Packages/`… Trường hợp khác chỉ in cảnh báo.
+Sau khi manifest hợp lệ, package xoá các file trong thư mục remote mà build này không sinh ra. Package chỉ dọn khi thư mục tên đúng `[BuildTarget]` (`Android`/`iOS`/`WebGL`), và không bao giờ dọn thư mục gốc project, `Assets/`, `Library/`, `Packages/`… Trường hợp khác chỉ in cảnh báo.
 
 ## Upload
 
