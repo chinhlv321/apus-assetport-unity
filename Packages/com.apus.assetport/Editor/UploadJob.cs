@@ -345,7 +345,11 @@ namespace Apus.AssetPort
         {
             if (task.IsCanceled) return "đã huỷ";
             var e = task.Exception?.GetBaseException();
-            return e == null ? "lỗi không rõ" : e.Message;
+            if (e == null) return "lỗi không rõ";
+            // The draft group expired (24 h) or was deleted: retrying the same group can never succeed.
+            if (e is PortalException p && p.Status == 404)
+                return e.Message + "\nGroup nháp không còn trên portal (hết hạn 24 giờ hoặc đã bị xoá): bấm \"Đóng / build mới\" rồi chạy lại.";
+            return e.Message;
         }
 
         internal static BuildTarget ParseTarget(string platform)
