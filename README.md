@@ -4,7 +4,7 @@ Package Unity **`com.apus.assetport`** và một **game mẫu** chạy được 
 
 | Thư mục | Nội dung |
 |---|---|
-| `Packages/com.apus.assetport/` | Package Editor: cấu hình Addressables một chạm, sinh manifest sau mỗi lần build, kiểm tra cấu hình, Build & Upload từ Editor hoặc CI. [README của package](Packages/com.apus.assetport/README.md) |
+| `Packages/com.apus.assetport/` | Phần Editor: cấu hình Addressables một chạm, sinh manifest sau mỗi lần build, kiểm tra cấu hình, Build & Upload từ Editor hoặc CI, xem bundle đã lên CDN chưa. Phần runtime: `ApusRemoteConfig` đọc remote config ([mục 7.4](#74-remote-config)). [README của package](Packages/com.apus.assetport/README.md) |
 | `Assets/Sample/` | Game mẫu: màn hình khởi động có cập nhật catalog, content sự kiện cập nhật từ xa, và gói vật phẩm tải theo yêu cầu (có hiện dung lượng và tiến trình) |
 
 Package **không publish**. Nó chỉ build rồi upload vào một *group nháp* trên portal. Việc đưa content tới người chơi (publish lên `dev`/`staging`/`prod`) do người có quyền làm trên trang web.
@@ -163,13 +163,13 @@ Làm theo thứ tự. Mỗi bước có chi tiết ở các mục sau.
    ```json
    {
      "dependencies": {
-       "com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.2.2"
+       "com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.3.0"
      }
    }
    ```
    Hoặc **Window > Package Manager > + > Add package from git URL…**. Trang Settings của portal hiện sẵn dòng này để copy.
-   - Luôn ghim tag (`#v1.2.2`). Không ghim thì mỗi máy có thể kéo về một bản khác nhau.
-   - Repo private: máy build cần quyền đọc repo, ví dụ dùng SSH `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.2.2`.
+   - Luôn ghim tag (`#v1.3.0`). Không ghim thì mỗi máy có thể kéo về một bản khác nhau.
+   - Repo private: máy build cần quyền đọc repo, ví dụ dùng SSH `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.3.0`.
    - Package phụ thuộc `com.unity.addressables`. Nếu game đã có Addressables thì Unity dùng bản của game.
 2. **Setup Addressables** bằng JSON từ portal ([mục 4.2](#42-cấu-hình-unity-bằng-một-lần-dán)). Bước này điền luôn Project slug và Portal URL vào **Project Settings > Apus Asset Port**. Commit `ProjectSettings/ApusAssetPortSettings.asset` và `Assets/AddressableAssetsData/`.
 3. **Chia group** ([mục 6.3](#63-group)): những gì cần cho màn hình chờ và cần chạy offline → group local (*Prevent Updates*); content cập nhật được → group remote; content lớn chỉ cần khi người chơi yêu cầu → group remote riêng, có label.
@@ -335,6 +335,8 @@ var shop = JsonUtility.FromJson<ShopConfig>(config.GetJson("shop", "{}")); // ch
 |---|---|
 | **Apus > Setup Addressables…** | cấu hình profile + catalog bằng JSON từ portal ([mục 4.2](#42-cấu-hình-unity-bằng-một-lần-dán)) |
 | **Apus > Check Addressables Config** | kiểm tra cấu hình ở mục 6 |
+| **Apus > Open ServerData Folder** | mở `ServerData/[BuildTarget]` của profile đang chọn trong Explorer/Finder (chưa build thì mở `ServerData`) |
+| **Apus > Remote Bundles…** | bundle của build gần nhất theo group; *Ping CDN* kiểm tra từng file đã có trên CDN và đúng dung lượng chưa; bấm tên file để copy URL |
 | **Apus > Project Settings…** | slug, Portal URL, CDN/envPath, bật/tắt ghi manifest |
 
 Chỉ muốn build mà không upload: dùng nút build của cửa sổ Addressables Groups như bình thường. Package vẫn ghi manifest vào `ServerData/<platform>/`; sau đó kéo thả `ServerData/` vào trang **Upload** của portal ([mục 10.3](#103-upload)).
@@ -386,8 +388,8 @@ Portal ở `https://admin.<domain>`, đứng sau **Cloudflare Access**.
 | Role (theo project) | Được làm |
 |---|---|
 | `viewer` | xem mọi trang của project |
-| `uploader` | + upload, publish và rollback `dev`/`staging`, xoá group nháp |
-| `lead` | + publish và rollback **`prod`**, quản lý thành viên và service token |
+| `uploader` | + upload, publish và rollback `dev`/`staging`, publish remote config `dev`/`staging`, xoá group nháp |
+| `lead` | + publish và rollback **`prod`** (content và remote config), quản lý thành viên và service token |
 | admin (toàn hệ thống) | mọi quyền trên mọi project, tạo project, quản lý user, chạy GC |
 | service token (Unity/CI) | chỉ upload vào đúng 1 project; **không bao giờ** publish |
 
@@ -456,6 +458,17 @@ Dọn bundle không còn dùng. GC chỉ xoá bundle **không** thuộc release 
 - **Tạo project**: slug (chữ thường, số, `-`) và tên hiển thị. envPath `dev`/`staging` được sinh ngẫu nhiên.
 - **Users**: cấp hoặc thu quyền admin, xoá user. Thường không cần thêm user ở đây, vì lead thêm thành viên vào project thì user được tạo tự động.
 
+### 10.11 Remote config
+
+Sửa giá trị cấu hình cho game theo từng env (`dev`/`staging`/`prod`), không cần build hay upload content. Code phía game ở [mục 7.4](#74-remote-config).
+
+- Chọn env, sửa bảng **Key / Kiểu / Giá trị** (`string`, `number`, `bool`, `json`), bấm **Publish**. Mỗi lần publish tạo một version mới; client nhận sau khoảng 1 phút (cache CDN).
+- **File trên CDN**: URL để dán vào `new ApusRemoteConfig(...)`, mỗi env một URL.
+- **Lịch sử**: 200 version gần nhất. Rollback = **Mở vào editor** ở version cũ rồi Publish (thành version mới có nội dung cũ).
+- Hai người cùng sửa: người publish sau nhận lỗi "đã có người publish bản mới hơn"; bấm lấy version mới nhất (giữ nội dung đang sửa) và xem Lịch sử trước khi publish đè.
+- Cảnh báo "File trên CDN đang ở version …" nghĩa là ghi lên CDN lỗi: bấm **Đồng bộ**.
+- Giới hạn: 500 key, 256 KB, value json lồng tối đa 32 tầng; key `[A-Za-z_][A-Za-z0-9_.-]`, tối đa 64 ký tự.
+
 ---
 
 ## 11. Quy trình release
@@ -516,18 +529,24 @@ Addressables mặc định đúng các quy định này vì script phải có s�
 
 ## 14. Phiên bản và tương thích
 
-- Package theo semver; mỗi bản phát hành có tag `vX.Y.Z` trên repo này. Xem [CHANGELOG](Packages/com.apus.assetport/CHANGELOG.md).
+- Package theo semver; mỗi bản phát hành có tag `vX.Y.Z` và một [GitHub Release](https://github.com/chinhlv321/apus-assetport-unity/releases) ghi thay đổi. Xem [CHANGELOG](Packages/com.apus.assetport/CHANGELOG.md).
 - Package **1.x** dùng API portal **v1** và manifest **schema 1**. Bản package đổi major khi cần portal mới hơn.
 - 1.1.0 cần portal có khung "Thiết lập nhanh" ở trang Settings để copy JSON; với portal cũ thì nhập tay các ô trong *Setup Addressables*.
 - 1.2.0 (WebGL) cần portal đã apply migration `0004_webgl_platform.sql`; portal cũ trả lỗi "platform phải là một trong Android, iOS" khi upload WebGL. Android/iOS không đổi.
+- 1.3.0 (remote config) cần portal có trang Remote config (migration `0005_remote_config.sql`). Phần Editor (Build & Upload, Remote Bundles) chạy với portal cũ.
 
 ### Phát hành bản package mới (cho người bảo trì)
 
 1. Sửa code trong `Packages/com.apus.assetport/`, thử với game mẫu (mục 3 và 4).
 2. Tăng `version` trong `Packages/com.apus.assetport/package.json`, ghi `CHANGELOG.md`.
-3. Commit, tag và push:
+3. Đổi tag trong README này (mục 5) và README của package sang bản mới; ở repo portal đổi `UNITY_PACKAGE_VERSION` trong `web/src/pages/SettingsPage.tsx` rồi deploy.
+4. Commit, tag và push:
    ```sh
-   git tag v1.2.2
-   git push origin master --tags
+   git tag -a v1.3.0 -m "Release 1.3.0"
+   git push origin master v1.3.0
    ```
-4. Các game đổi tag trong `manifest.json` để nâng.
+5. Tạo GitHub Release cho tag, nội dung là mục của bản đó trong `CHANGELOG.md`:
+   ```sh
+   gh release create v1.3.0 --verify-tag --title v1.3.0 --notes-file notes.md
+   ```
+6. Các game đổi tag trong `manifest.json` để nâng.
