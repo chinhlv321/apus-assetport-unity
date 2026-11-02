@@ -1,9 +1,9 @@
 {
   "name": "com.apus.assetport",
   "displayName": "Apus Asset Port",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "unity": "2021.3",
-  "description": "Ghi apus-manifest.json sau mỗi lần build Addressables, kiểm tra cấu hình và build + upload content lên Apus Asset Port (Cloudflare R2).",
+  "description": "Ghi apus-manifest.json sau mỗi lần build Addressables, kiểm tra cấu hình và build + upload content lên Apus Asset Port (Cloudflare R2). Runtime: đọc remote config.",
   "author": {
     "name": "Apus"
   },

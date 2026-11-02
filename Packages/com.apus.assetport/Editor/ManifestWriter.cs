@@ -163,6 +163,31 @@ namespace Apus.AssetPort
             return Path.GetFullPath(buildPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
+        /// <summary>Remote catalog build folder of the active profile and build target, relative to the project (ServerData/Android).</summary>
+        internal static string RemoteBuildDir()
+        {
+            var settings = AddressableAssetSettingsDefaultObject.Settings;
+            var buildPath = settings != null ? settings.RemoteCatalogBuildPath.GetValue(settings) : null;
+            return string.IsNullOrEmpty(buildPath) || buildPath == AddressableAssetProfileSettings.undefinedEntryValue ? "ServerData" : buildPath;
+        }
+
+        /// <summary>Opens the remote build folder (ServerData/[BuildTarget] of the active profile and build target).</summary>
+        [MenuItem("Apus/Open ServerData Folder", priority = 21)]
+        static void OpenServerData()
+        {
+            var buildPath = RemoteBuildDir();
+            // Not built yet for this target: open the closest existing parent inside the project (usually ServerData).
+            var dir = Path.GetFullPath(buildPath);
+            while (!Directory.Exists(dir) && Path.GetDirectoryName(dir) is string parent && IsInside(parent, Directory.GetCurrentDirectory()))
+                dir = parent;
+            if (!Directory.Exists(dir))
+            {
+                EditorUtility.DisplayDialog("Apus", "Chưa có thư mục " + buildPath + ". Build Addressables trước.", "OK");
+                return;
+            }
+            EditorUtility.OpenWithDefaultApp(dir);
+        }
+
         static HashSet<string> CollectOutputFiles(AddressablesPlayerBuildResult result, AddressableAssetSettings settings, string dir, ManifestOutcome outcome)
         {
             var outputs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

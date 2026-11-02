@@ -161,8 +161,12 @@ namespace Apus.AssetPort
 
         sealed class Parser
         {
+            // Recursion guard: a deeply nested document (e.g. remote config) must fail with FormatException,
+            // not a StackOverflowException that kills the player. The portal caps json values at 32 levels.
+            const int MaxDepth = 64;
             readonly string m_Text;
             int m_Pos;
+            int m_Depth;
 
             public Parser(string text) { m_Text = text; }
 
@@ -186,8 +190,12 @@ namespace Apus.AssetPort
                 var c = m_Text[m_Pos];
                 switch (c)
                 {
-                    case '{': return ReadObject();
-                    case '[': return ReadArray();
+                    case '{':
+                    case '[':
+                        if (++m_Depth > MaxDepth) throw Error("JSON nested deeper than " + MaxDepth + " levels");
+                        var nested = c == '{' ? (object)ReadObject() : ReadArray();
+                        m_Depth--;
+                        return nested;
                     case '"': return ReadString();
                     case 't': Expect("true"); return true;
                     case 'f': Expect("false"); return false;

@@ -283,6 +283,28 @@ Bundle được Unity cache. Từ lần thứ hai `GetDownloadSize` trả 0, kh�
 - Không đổi address hay label của asset đã phát hành mà không sửa code tương ứng trong bản app đó: bản app cũ vẫn tìm theo address cũ.
 - Script (MonoBehaviour, ScriptableObject) phải có sẵn trong bản app. Content update chỉ đổi **dữ liệu**, không thêm code được ([mục 12](#12-chính-sách-store)).
 
+### 7.4 Remote config
+
+Giá trị cấu hình (số mạng, bật/tắt tính năng, giá shop…) sửa và publish ở trang **Remote config** của portal, theo từng env. Đây là file JSON riêng trên CDN, **không** nằm trong catalog Addressables: đổi giá trị không cần build hay upload content, không cần ra bản app mới.
+
+```csharp
+using Apus.AssetPort;
+
+// Tạo trong Awake/Start (không phải field initializer). URL copy từ trang Remote config, mỗi env một URL.
+var config = new ApusRemoteConfig("https://cdn.<domain>/config/<project>/<envPath>/remote-config.json");
+// Ngay sau khi tạo đã có giá trị của phiên trước (cache trong persistentDataPath).
+yield return config.Fetch(timeoutSeconds: 10);
+int lives = config.GetInt("maxLives", 3);
+bool sale = config.GetBool("saleEnabled");
+var shop = JsonUtility.FromJson<ShopConfig>(config.GetJson("shop", "{}")); // chưa có key → object mặc định
+```
+
+- Getter luôn có giá trị mặc định: key chưa có hoặc sai kiểu thì trả fallback.
+- `Fetch` lỗi (offline, timeout) thì giữ giá trị đang dùng; xem `LastError`.
+- Cache lưu ở `persistentDataPath` (WebGL: `PlayerPrefs`, dùng chung quota ~1 MB với game, nên giữ config nhỏ). File publish sớm hơn bản đang dùng (edge CDN chưa hết cache) bị bỏ qua.
+- CDN cache file tối đa ~60 giây, nên client nhận bản mới sau khoảng 1 phút.
+- Rollback: trên portal bấm *Mở vào editor* ở version cũ rồi Publish, tạo version mới có nội dung cũ.
+
 ---
 
 ## 8. Build & Upload từ Editor

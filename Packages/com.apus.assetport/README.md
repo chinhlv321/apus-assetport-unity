@@ -1,11 +1,13 @@
 # Apus Asset Port (`com.apus.assetport`)
 
-Package Editor cho Unity 2021.3+ với Addressables 1.21.x hoặc 2.x. Package làm bốn việc:
+Package cho Unity 2021.3+ với Addressables 1.21.x hoặc 2.x. Phần Editor làm bốn việc:
 
 - Cấu hình Addressables theo chuẩn của portal chỉ bằng một lần dán (**Apus > Setup Addressables…**).
 - Sau mỗi lần build Addressables, ghi `apus-manifest.json` vào thư mục remote (`ServerData/<platform>/`). Áp dụng cho cả build từ cửa sổ Groups lẫn build cùng player. Đồng thời xoá các file cũ trong thư mục đó mà build này không sinh ra.
 - Kiểm tra cấu hình Addressables theo chuẩn của Apus Asset Port.
 - Build rồi upload content lên portal: dùng menu trong Editor, hoặc chạy batchmode trên CI. Package **không bao giờ publish**.
+
+Phần runtime (`Apus.AssetPort`) có `ApusRemoteConfig` để đọc remote config, xem [README mục 7.4](../../README.md#74-remote-config).
 
 Hướng dẫn đầy đủ (cấu hình Addressables, code client, quy trình release, xử lý sự cố) nằm ở [README của repo](../../README.md).
 
@@ -14,10 +16,10 @@ Hướng dẫn đầy đủ (cấu hình Addressables, code client, quy trình r
 Thêm vào `Packages/manifest.json`:
 
 ```json
-"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.2.2"
+"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.3.0"
 ```
 
-Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.2.2`).
+Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.3.0`).
 
 ## Thiết lập
 
@@ -52,6 +54,8 @@ Chi tiết từng setting và lý do: [README mục 6](../../README.md#6-cấu-h
 ## Menu
 
 - **Apus > Setup Addressables…**: cấu hình profile và catalog bằng JSON từ portal (xem trên).
+- **Apus > Open ServerData Folder**: mở `ServerData/[BuildTarget]` của profile đang chọn (chưa build thì mở `ServerData`).
+- **Apus > Remote Bundles…**: bundle của build gần nhất theo group; *Ping CDN* kiểm tra từng file đã có trên CDN chưa (HTTP + dung lượng). Bấm tên file để copy URL.
 - **Apus > Build & Upload…**
   - Chọn Android/iOS/WebGL, tên group, ghi chú và kiểu build:
     - *Content Update* (mặc định): Update a Previous Build, đọc `addressables_content_state.bin` trong `Assets/`.

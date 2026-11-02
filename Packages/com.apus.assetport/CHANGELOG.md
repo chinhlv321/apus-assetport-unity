@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0] - 2026-11-02
+
+- Thêm assembly runtime `Apus.AssetPort` với `ApusRemoteConfig`: tải remote config publish từ trang **Remote config** của portal (file JSON trên CDN, không cần build/upload Addressables), cache giá trị lần trước (WebGL: `PlayerPrefs`), getter có fallback. File chỉ được nhận khi `publishedAt` mới hơn bản đang dùng (bỏ qua edge CDN cũ, vẫn nhận khi DB portal dựng lại). Cần portal đã có migration 0005.
+- `Json` chuyển sang assembly runtime (Editor dùng qua `InternalsVisibleTo`), thêm giới hạn lồng 64 tầng (lỗi `FormatException` thay vì tràn stack).
+- Menu **Apus > Open ServerData Folder**: mở thư mục build remote (`ServerData/[BuildTarget]` của profile đang chọn) trong Explorer/Finder.
+- Menu **Apus > Remote Bundles…**: liệt kê bundle của build gần nhất theo group (đọc `apus-manifest.json`), *Ping CDN* gửi HEAD tới `Remote.LoadPath` để xem file nào đã có trên CDN và đúng dung lượng; bấm tên file để copy URL.
+
 ## [1.2.2] - 2026-10-30
 
 - Build & Upload: group nháp hết hạn hoặc bị xoá (404) thì hướng dẫn bấm "Đóng / build mới" thay vì để Thử lại mãi.

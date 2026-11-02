@@ -2,6 +2,7 @@
     "name": "Apus.AssetPort.Editor",
     "rootNamespace": "Apus.AssetPort",
     "references": [
+        "Apus.AssetPort",
         "Unity.Addressables",
         "Unity.Addressables.Editor",
         "Unity.ResourceManager"
