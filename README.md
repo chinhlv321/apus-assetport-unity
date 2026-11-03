@@ -163,13 +163,13 @@ Làm theo thứ tự. Mỗi bước có chi tiết ở các mục sau.
    ```json
    {
      "dependencies": {
-       "com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.3.0"
+       "com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.4.0"
      }
    }
    ```
    Hoặc **Window > Package Manager > + > Add package from git URL…**. Trang Settings của portal hiện sẵn dòng này để copy.
-   - Luôn ghim tag (`#v1.3.0`). Không ghim thì mỗi máy có thể kéo về một bản khác nhau.
-   - Repo private: máy build cần quyền đọc repo, ví dụ dùng SSH `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.3.0`.
+   - Luôn ghim tag (`#v1.4.0`). Không ghim thì mỗi máy có thể kéo về một bản khác nhau.
+   - Repo private: máy build cần quyền đọc repo, ví dụ dùng SSH `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.4.0`.
    - Package phụ thuộc `com.unity.addressables`. Nếu game đã có Addressables thì Unity dùng bản của game.
 2. **Setup Addressables** bằng JSON từ portal ([mục 4.2](#42-cấu-hình-unity-bằng-một-lần-dán)). Bước này điền luôn Project slug và Portal URL vào **Project Settings > Apus Asset Port**. Commit `ProjectSettings/ApusAssetPortSettings.asset` và `Assets/AddressableAssetsData/`.
 3. **Chia group** ([mục 6.3](#63-group)): những gì cần cho màn hình chờ và cần chạy offline → group local (*Prevent Updates*); content cập nhật được → group remote; content lớn chỉ cần khi người chơi yêu cầu → group remote riêng, có label.
@@ -301,6 +301,8 @@ var shop = JsonUtility.FromJson<ShopConfig>(config.GetJson("shop", "{}")); // ch
 
 - Getter luôn có giá trị mặc định: key chưa có hoặc sai kiểu thì trả fallback.
 - `Fetch` lỗi (offline, timeout) thì giữ giá trị đang dùng; xem `LastError`.
+- **Giá trị mặc định trong project**: *Assets > Create > Apus > Remote Config Defaults* tạo asset khai báo key / kiểu / giá trị mặc định. Truyền vào `new ApusRemoteConfig(url, defaults)` thì key chưa publish trả giá trị của asset (trước cả `fallback` của getter).
+- **Đưa key lên portal**: **Apus > Export Remote Config Defaults…** (hoặc menu ⋮ của asset > *Export JSON…*) ghi file JSON, rồi trên portal bấm **Import JSON** ở trang Remote config ([mục 10.11](#1011-remote-config)). Key sai kiểu hoặc trùng thì export dừng và báo tên key.
 - Cache lưu ở `persistentDataPath` (WebGL: `PlayerPrefs`, dùng chung quota ~1 MB với game, nên giữ config nhỏ). File publish sớm hơn bản đang dùng (edge CDN chưa hết cache) bị bỏ qua.
 - CDN cache file tối đa ~60 giây, nên client nhận bản mới sau khoảng 1 phút.
 - Rollback: trên portal bấm *Mở vào editor* ở version cũ rồi Publish, tạo version mới có nội dung cũ.
@@ -336,6 +338,7 @@ var shop = JsonUtility.FromJson<ShopConfig>(config.GetJson("shop", "{}")); // ch
 | **Apus > Setup Addressables…** | cấu hình profile + catalog bằng JSON từ portal ([mục 4.2](#42-cấu-hình-unity-bằng-một-lần-dán)) |
 | **Apus > Check Addressables Config** | kiểm tra cấu hình ở mục 6 |
 | **Apus > Open ServerData Folder** | mở `ServerData/[BuildTarget]` của profile đang chọn trong Explorer/Finder (chưa build thì mở `ServerData`) |
+| **Apus > Export Remote Config Defaults…** | ghi asset Remote Config Defaults ra file JSON để Import trên portal ([mục 7.4](#74-remote-config)) |
 | **Apus > Remote Bundles…** | bundle của build gần nhất theo group; *Ping CDN* kiểm tra từng file đã có trên CDN và đúng dung lượng chưa; bấm tên file để copy URL |
 | **Apus > Project Settings…** | slug, Portal URL, CDN/envPath, bật/tắt ghi manifest |
 
@@ -462,7 +465,17 @@ Dọn bundle không còn dùng. GC chỉ xoá bundle **không** thuộc release 
 
 Sửa giá trị cấu hình cho game theo từng env (`dev`/`staging`/`prod`), không cần build hay upload content. Code phía game ở [mục 7.4](#74-remote-config).
 
-- Chọn env, sửa bảng **Key / Kiểu / Giá trị** (`string`, `number`, `bool`, `json`), bấm **Publish**. Mỗi lần publish tạo một version mới; client nhận sau khoảng 1 phút (cache CDN).
+- Chọn env, sửa bảng **Key / Kiểu / Giá trị** (`string`, `number`, `bool`, `json`), bấm **Publish**.
+- **Import JSON**: nạp nhiều key một lúc. Trang hiện số key mới / đổi giá trị / bị xoá trước khi áp; mặc định gộp (key trùng thì ghi đè, key cũ giữ nguyên), tick *Xoá các key không có trong file* để thay toàn bộ. Import chỉ đổi editor, phải bấm Publish mới lên CDN. Định dạng:
+  ```json
+  [
+    { "key": "inter_ad_on_off_user_paid", "type": "bool", "value": true },
+    { "key": "level_show_rate", "type": "number", "value": 100 },
+    { "key": "force_update_game_info", "type": "json", "value": { "isEnabled": true, "minVersion": "0.0" } }
+  ]
+  ```
+  Thiếu `type` thì tự suy ra từ value. Cũng nhận file trên CDN của env khác (`{"schema":1,"values":{…}}`) hoặc object `{"key": value}`, để copy config giữa các env.
+- **Export JSON**: tải config đang có trong editor về đúng định dạng trên (mỗi key một dòng, dễ commit và so sánh). Mỗi lần publish tạo một version mới; client nhận sau khoảng 1 phút (cache CDN).
 - **File trên CDN**: URL để dán vào `new ApusRemoteConfig(...)`, mỗi env một URL.
 - **Lịch sử**: 200 version gần nhất. Rollback = **Mở vào editor** ở version cũ rồi Publish (thành version mới có nội dung cũ).
 - Hai người cùng sửa: người publish sau nhận lỗi "đã có người publish bản mới hơn"; bấm lấy version mới nhất (giữ nội dung đang sửa) và xem Lịch sử trước khi publish đè.
@@ -534,6 +547,7 @@ Addressables mặc định đúng các quy định này vì script phải có s�
 - 1.1.0 cần portal có khung "Thiết lập nhanh" ở trang Settings để copy JSON; với portal cũ thì nhập tay các ô trong *Setup Addressables*.
 - 1.2.0 (WebGL) cần portal đã apply migration `0004_webgl_platform.sql`; portal cũ trả lỗi "platform phải là một trong Android, iOS" khi upload WebGL. Android/iOS không đổi.
 - 1.3.0 (remote config) cần portal có trang Remote config (migration `0005_remote_config.sql`). Phần Editor (Build & Upload, Remote Bundles) chạy với portal cũ.
+- 1.4.0: file Export Remote Config Defaults cần portal có nút **Import JSON** ở trang Remote config.
 
 ### Phát hành bản package mới (cho người bảo trì)
 

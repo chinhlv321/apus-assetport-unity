@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -40,12 +41,17 @@ namespace Apus.AssetPort
         public string PublishedAt { get; private set; }
 
         private Dictionary<string, object> _values = new Dictionary<string, object>();
+        private readonly Dictionary<string, object> _defaults;
         private readonly string _cacheKey;
 
-        public ApusRemoteConfig(string url)
+        /// <param name="defaults">Optional: getters fall back to these values for keys that are not published.</param>
+        public ApusRemoteConfig(string url, ApusRemoteConfigDefaults defaults = null)
         {
             if (string.IsNullOrEmpty(url)) throw new ArgumentException("url is required", nameof(url));
             Url = url;
+            var errors = new List<string>();
+            _defaults = defaults != null ? defaults.ToValues(errors) : new Dictionary<string, object>();
+            foreach (var e in errors) Debug.LogWarning("[ApusRemoteConfig] Default ignored: " + e);
             _cacheKey = "apus-remote-config-" + Hash128.Compute(url);
             try
             {
@@ -141,19 +147,22 @@ namespace Apus.AssetPort
             return true;
         }
 
-        public bool Has(string key) => _values.ContainsKey(key);
+        /// <summary>Published values win; keys that are not published come from the defaults asset.</summary>
+        private Dictionary<string, object> Source(string key) => _values.ContainsKey(key) ? _values : _defaults;
 
-        public IEnumerable<string> Keys => _values.Keys;
+        public bool Has(string key) => _values.ContainsKey(key) || _defaults.ContainsKey(key);
+
+        public IEnumerable<string> Keys => _values.Keys.Union(_defaults.Keys);
 
         public string GetString(string key, string fallback = null) =>
-            _values.TryGetValue(key, out var v) && v is string s ? s : fallback;
+            Source(key).TryGetValue(key, out var v) && v is string s ? s : fallback;
 
         public double GetDouble(string key, double fallback = 0) =>
-            _values.TryGetValue(key, out var v) && v is double d ? d : fallback;
+            Source(key).TryGetValue(key, out var v) && v is double d ? d : fallback;
 
         public float GetFloat(string key, float fallback = 0) => (float)GetDouble(key, fallback);
 
-        public long GetLong(string key, long fallback = 0) => Json.GetLong(_values, key, fallback);
+        public long GetLong(string key, long fallback = 0) => Json.GetLong(Source(key), key, fallback);
 
         public int GetInt(string key, int fallback = 0)
         {
@@ -162,11 +171,11 @@ namespace Apus.AssetPort
         }
 
         public bool GetBool(string key, bool fallback = false) =>
-            _values.TryGetValue(key, out var v) && v is bool b ? b : fallback;
+            Source(key).TryGetValue(key, out var v) && v is bool b ? b : fallback;
 
         /// <summary>The value as JSON text (any type), e.g. for <c>JsonUtility.FromJson&lt;T&gt;(config.GetJson("shop"))</c>.</summary>
         public string GetJson(string key, string fallback = null) =>
-            _values.TryGetValue(key, out var v) ? Json.Serialize(v) : fallback;
+            Source(key).TryGetValue(key, out var v) ? Json.Serialize(v) : fallback;
 
         public override string ToString() =>
             string.Format(CultureInfo.InvariantCulture, "ApusRemoteConfig(v{0}, {1} keys)", Version, _values.Count);

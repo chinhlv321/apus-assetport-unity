@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.4.0] - 2026-11-03
+
+- Asset **Remote Config Defaults** (Assets > Create > Apus): khai báo key / kiểu / giá trị mặc định của remote config trong project. `new ApusRemoteConfig(url, defaults)` dùng nó làm fallback cho key chưa publish.
+- Menu **Apus > Export Remote Config Defaults…** (và *Export JSON…* trên asset): ghi file `[{"key","type","value"}]` để Import trên trang Remote config của portal. Key sai hoặc trùng thì không export.
+
 ## [1.3.0] - 2026-11-02
 
 - Thêm assembly runtime `Apus.AssetPort` với `ApusRemoteConfig`: tải remote config publish từ trang **Remote config** của portal (file JSON trên CDN, không cần build/upload Addressables), cache giá trị lần trước (WebGL: `PlayerPrefs`), getter có fallback. File chỉ được nhận khi `publishedAt` mới hơn bản đang dùng (bỏ qua edge CDN cũ, vẫn nhận khi DB portal dựng lại). Cần portal đã có migration 0005.
