@@ -60,7 +60,9 @@ namespace Apus.AssetPort
 
         public string CdnBase => (CdnBaseUrl ?? "").Trim().TrimEnd('/');
 
-        public string BundleLoadPath => CdnBase + "/bundles/" + Project + "/[BuildTarget]";
+        // Addressables bundle hashes ignore the Unity version: a rebuild with another Unity version keeps
+        // the names but changes the bytes, so each Unity version gets its own folder on the CDN.
+        public string BundleLoadPath => CdnBase + "/bundles/" + Project + "/[BuildTarget]/[UnityEngine.Application.unityVersion]";
 
         public string CatalogLoadPath(string env) =>
             CdnBase + "/live/" + Project + "/" + EnvPath(env) + "/[BuildTarget]/[UnityEngine.Application.version]";

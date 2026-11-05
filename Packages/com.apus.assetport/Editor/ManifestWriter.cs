@@ -127,6 +127,7 @@ namespace Apus.AssetPort
                 addressablesVersion = AddressablesVersion(),
                 gitCommit = GitCommit(),
                 builtAt = DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture),
+                bundleSubdir = BundleSubdir(settings),
             };
             foreach (var path in outputs.OrderBy(Path.GetFileName, StringComparer.Ordinal))
             {
@@ -347,6 +348,18 @@ namespace Apus.AssetPort
             if (byFlag != byState)
                 outcome.Warnings.Add("Không chắc kind của build (IsUpdateContentBuild → " + byFlag + ", content state → " + byState + "); dùng " + byFlag + ".");
             return byFlag;
+        }
+
+        /// <summary>
+        /// Unity version when the active profile's Remote.LoadPath ends in it (setup from 1.5.0), so the portal
+        /// stores the bundles in that folder; null for the older flat [BuildTarget] layout.
+        /// </summary>
+        static string BundleSubdir(AddressableAssetSettings settings)
+        {
+            var profiles = settings.profileSettings;
+            var raw = profiles.GetValueByName(settings.activeProfileId, AddressablesSetup.RemoteLoadPathVar) ?? "";
+            var load = profiles.EvaluateString(settings.activeProfileId, raw).TrimEnd('/');
+            return load.EndsWith("/" + Application.unityVersion, StringComparison.Ordinal) ? Application.unityVersion : null;
         }
 
         public static string AddressablesVersion()

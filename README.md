@@ -163,13 +163,13 @@ Làm theo thứ tự. Mỗi bước có chi tiết ở các mục sau.
    ```json
    {
      "dependencies": {
-       "com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.4.0"
+       "com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.5.0"
      }
    }
    ```
    Hoặc **Window > Package Manager > + > Add package from git URL…**. Trang Settings của portal hiện sẵn dòng này để copy.
-   - Luôn ghim tag (`#v1.4.0`). Không ghim thì mỗi máy có thể kéo về một bản khác nhau.
-   - Repo private: máy build cần quyền đọc repo, ví dụ dùng SSH `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.4.0`.
+   - Luôn ghim tag (`#v1.5.0`). Không ghim thì mỗi máy có thể kéo về một bản khác nhau.
+   - Repo private: máy build cần quyền đọc repo, ví dụ dùng SSH `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.5.0`.
    - Package phụ thuộc `com.unity.addressables`. Nếu game đã có Addressables thì Unity dùng bản của game.
 2. **Setup Addressables** bằng JSON từ portal ([mục 4.2](#42-cấu-hình-unity-bằng-một-lần-dán)). Bước này điền luôn Project slug và Portal URL vào **Project Settings > Apus Asset Port**. Commit `ProjectSettings/ApusAssetPortSettings.asset` và `Assets/AddressableAssetsData/`.
 3. **Chia group** ([mục 6.3](#63-group)): những gì cần cho màn hình chờ và cần chạy offline → group local (*Prevent Updates*); content cập nhật được → group remote; content lớn chỉ cần khi người chơi yêu cầu → group remote riêng, có label.
@@ -191,7 +191,7 @@ Làm theo thứ tự. Mỗi bước có chi tiết ở các mục sau.
 | Biến | Profile | Giá trị |
 |---|---|---|
 | `Remote.BuildPath` | tất cả | `ServerData/[BuildTarget]` |
-| `Remote.LoadPath` (bundle) | tất cả | `https://cdn.<domain>/bundles/<project>/[BuildTarget]` |
+| `Remote.LoadPath` (bundle) | tất cả | `https://cdn.<domain>/bundles/<project>/[BuildTarget]/[UnityEngine.Application.unityVersion]` |
 | `Apus.CatalogLoadPath` (biến tự tạo) | mỗi env | `https://cdn.<domain>/live/<project>/<envPath>/[BuildTarget]/[UnityEngine.Application.version]` |
 
 - **Phải dùng một biến profile riêng** cho catalog load path. Đừng chọn *Custom* ở ô Load Path của remote catalog: giá trị Custom là một chuỗi dùng chung cho mọi profile, nên không khác nhau theo env được.

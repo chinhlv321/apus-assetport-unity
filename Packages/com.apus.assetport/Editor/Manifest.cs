@@ -56,6 +56,11 @@ namespace Apus.AssetPort
         /// <summary>Written as JSON null when empty.</summary>
         public string gitCommit;
         public string builtAt;
+        /// <summary>
+        /// = unityVersion when Remote.LoadPath ends in the Unity version (bundles/{project}/{platform}/{unityVersion}/);
+        /// omitted otherwise. Needs a portal with migration 0006.
+        /// </summary>
+        public string bundleSubdir;
         public List<ManifestFile> files = new List<ManifestFile>();
 
         public long TotalBytes => files.Sum(f => f.size);
@@ -73,6 +78,7 @@ namespace Apus.AssetPort
             sb.Append("  \"addressablesVersion\": ").Append(Json.Quote(addressablesVersion ?? "")).Append(",\n");
             sb.Append("  \"gitCommit\": ").Append(string.IsNullOrEmpty(gitCommit) ? "null" : Json.Quote(gitCommit)).Append(",\n");
             sb.Append("  \"builtAt\": ").Append(Json.Quote(builtAt ?? "")).Append(",\n");
+            if (!string.IsNullOrEmpty(bundleSubdir)) sb.Append("  \"bundleSubdir\": ").Append(Json.Quote(bundleSubdir)).Append(",\n");
             sb.Append("  \"files\": [");
             for (var i = 0; i < files.Count; i++)
             {
@@ -101,6 +107,7 @@ namespace Apus.AssetPort
                 addressablesVersion = Json.GetString(o, "addressablesVersion"),
                 gitCommit = Json.GetString(o, "gitCommit"),
                 builtAt = Json.GetString(o, "builtAt"),
+                bundleSubdir = Json.GetString(o, "bundleSubdir"),
             };
             if (o.TryGetValue("files", out var filesObj) && filesObj is List<object> list)
             {
@@ -150,6 +157,8 @@ namespace Apus.AssetPort
             if (m.kind != PortalConstants.KindBaseline && m.kind != PortalConstants.KindUpdate) errors.Add("kind phải là baseline hoặc update");
             if (string.IsNullOrEmpty(m.unityVersion)) errors.Add("thiếu unityVersion");
             if (string.IsNullOrEmpty(m.addressablesVersion)) errors.Add("thiếu addressablesVersion");
+            if (!string.IsNullOrEmpty(m.bundleSubdir) && (m.bundleSubdir != m.unityVersion || !IsValidAppVersion(m.bundleSubdir)))
+                errors.Add("bundleSubdir phải bằng unityVersion ([0-9A-Za-z._-], tối đa 32 ký tự), đang là '" + m.bundleSubdir + "'");
             if (m.files == null)
             {
                 errors.Add("thiếu danh sách files");

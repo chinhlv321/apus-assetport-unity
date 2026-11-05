@@ -16,10 +16,10 @@ Hướng dẫn đầy đủ (cấu hình Addressables, code client, quy trình r
 Thêm vào `Packages/manifest.json`:
 
 ```json
-"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.4.0"
+"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.5.0"
 ```
 
-Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.4.0`).
+Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.5.0`).
 
 ## Thiết lập
 
@@ -41,7 +41,7 @@ Khi portal chạy ở localhost, có thể nhập *Dev email* thay cho token. Pa
 
 1. Trên portal, mở trang **Settings** của project, bấm Copy ở khung *Thiết lập nhanh* để lấy JSON `{"schema":1,"project":…,"portalUrl":…,"cdnBaseUrl":…,"envPaths":{…}}`.
 2. Dán vào cửa sổ, bấm *Đọc cấu hình* rồi *Apply*. Công cụ sẽ:
-   - tạo hoặc cập nhật 3 profile `dev`/`staging`/`prod` với `Remote.BuildPath` = `ServerData/[BuildTarget]`, `Remote.LoadPath` = `<cdn>/bundles/<project>/[BuildTarget]` và `Apus.CatalogLoadPath` = `<cdn>/live/<project>/<envPath>/[BuildTarget]/[UnityEngine.Application.version]`;
+   - tạo hoặc cập nhật 3 profile `dev`/`staging`/`prod` với `Remote.BuildPath` = `ServerData/[BuildTarget]`, `Remote.LoadPath` = `<cdn>/bundles/<project>/[BuildTarget]/[UnityEngine.Application.unityVersion]` và `Apus.CatalogLoadPath` = `<cdn>/live/<project>/<envPath>/[BuildTarget]/[UnityEngine.Application.version]`;
    - bật Build Remote Catalog, đặt Build Path = `Remote.BuildPath` và Load Path = `Apus.CatalogLoadPath` (không dùng *Custom*, vì giá trị Custom dùng chung cho mọi profile);
    - đặt Player Version Override = `content`, Build Addressables on Player Build, Check for Update Issues = Fail Build, Content State Build Path mặc định;
    - tuỳ chọn: sửa group theo chuẩn (remote: Append Hash + `Remote.*`; local: Prevent Updates), và bật *Only update catalogs manually* (khuyên dùng, xem [README mục 7](../../README.md#7-code-phía-client));
@@ -101,6 +101,7 @@ Portal dùng file này để biết platform, appVersion và danh sách file c�
 | `kind` | `baseline` (New Build / build cùng player) hoặc `update` |
 | `unityVersion`, `addressablesVersion` | version lúc build; portal chặn content update khác version với baseline |
 | `gitCommit`, `builtAt` | commit hiện tại (null nếu không có git) và thời điểm build |
+| `bundleSubdir` | = `unityVersion` khi `Remote.LoadPath` kết thúc bằng Unity version (setup từ 1.5.0); không có thì bundle nằm ở `bundles/<project>/<platform>/` (layout cũ) |
 | `files[]` | `name`, `size`, `md5` của từng bundle và file catalog |
 
 File trong `ServerData/` mà không có tên trong manifest sẽ không được upload.

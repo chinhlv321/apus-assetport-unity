@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.5.0] - 2026-11-05
+
+- `Remote.LoadPath` mới: `<cdn>/bundles/<project>/[BuildTarget]/[UnityEngine.Application.unityVersion]`. Addressables giữ nguyên tên bundle (hash) khi build lại cùng nội dung bằng Unity version khác, nhưng nội dung file khác, nên portal chặn upload ("same name but different content"). Mỗi Unity version giờ có thư mục bundle riêng trên CDN.
+- `apus-manifest.json` có thêm `bundleSubdir` (= `unityVersion`) khi `Remote.LoadPath` của profile đang chọn kết thúc bằng Unity version; portal lưu bundle vào `bundles/<project>/<platform>/<unityVersion>/`.
+- Cần portal có migration 0006 (deploy portal trước). Project cũ: chạy lại **Apus > Setup Addressables…** để lấy LoadPath mới, rồi build **baseline** mới (bản update phải cùng thư mục với baseline của nó).
+
 ## [1.4.0] - 2026-11-03
 
 - Asset **Remote Config Defaults** (Assets > Create > Apus): khai báo key / kiểu / giá trị mặc định của remote config trong project. `new ApusRemoteConfig(url, defaults)` dùng nó làm fallback cho key chưa publish.
