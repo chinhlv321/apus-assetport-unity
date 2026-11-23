@@ -52,6 +52,19 @@ namespace Apus.AssetPort
         static ReleaseUploadResult s_LastRelease;
         static string s_LastCompleteStatus;
         static readonly List<string> s_PendingLog = new List<string>();
+        static bool s_ReloadLocked;
+
+        /// <summary>
+        /// A script recompile mid-upload reloads the domain and kills the upload task: hold reloads while it runs.
+        /// Every path out of the upload (done, failed, cancelled) must call this with false, or the Editor never reloads.
+        /// </summary>
+        static void LockReload(bool locked)
+        {
+            if (s_ReloadLocked == locked) return;
+            s_ReloadLocked = locked;
+            if (locked) EditorApplication.LockReloadAssemblies();
+            else EditorApplication.UnlockReloadAssemblies();
+        }
 
         public static readonly UploadProgress Progress = new UploadProgress();
 
@@ -201,6 +214,7 @@ namespace Apus.AssetPort
             var dir = state.outputDir;
             s_PendingGroupId = 0;
             s_LastRelease = null;
+            LockReload(true);
             s_Task = Task.Run(() => TimeoutAsError(async () =>
             {
                 if (groupId <= 0)
@@ -235,6 +249,7 @@ namespace Apus.AssetPort
             if (!s_Task.IsCompleted) return;
             var task = s_Task;
             s_Task = null;
+            LockReload(false);
             if (task.IsFaulted || task.IsCanceled)
             {
                 Fail(s_State.CurrentPlatform + ": upload thất bại: " + Message(task));
@@ -290,6 +305,7 @@ namespace Apus.AssetPort
 
         static void Fail(string message)
         {
+            LockReload(false);
             if (s_State == null) return;
             s_State.error = message;
             s_State.phase = Phase.Failed;

@@ -409,7 +409,10 @@ namespace Apus.AssetPort
         static bool Retryable(Exception e)
         {
             // 3xx (Access login redirect) and 4xx are answers, not glitches.
-            if (e is PortalException pe) return pe.Status >= 500 || pe.Status == 408 || pe.Status == 429;
+            // R2's 400 BadDigest: the body was corrupted in transit, so its Content-MD5 did not match (the web engine retries it too).
+            if (e is PortalException pe)
+                return pe.Status >= 500 || pe.Status == 408 || pe.Status == 429 ||
+                       (pe.Status == 400 && pe.Message.IndexOf("BadDigest", StringComparison.OrdinalIgnoreCase) >= 0);
             if (e is FileNotFoundException || e is DirectoryNotFoundException || e is UnauthorizedAccessException) return false;
             // OperationCanceledException with the caller's token not cancelled = HttpClient timeout.
             return e is HttpRequestException || e is IOException || e is WebException || e is SocketException ||

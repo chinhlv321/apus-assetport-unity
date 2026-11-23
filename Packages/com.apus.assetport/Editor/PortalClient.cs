@@ -172,6 +172,26 @@ namespace Apus.AssetPort
             return Json.AsObject(await Send(HttpMethod.Post, "api/groups/" + groupId + "/complete", "{}", ct).ConfigureAwait(false));
         }
 
+        /// <summary>GET /remote-config → <c>RemoteConfigResponse</c> (live version, its entries, history).</summary>
+        public async Task<Dictionary<string, object>> GetRemoteConfig(string project, string env, CancellationToken ct)
+        {
+            var path = "api/remote-config?project=" + Uri.EscapeDataString(project) + "&env=" + Uri.EscapeDataString(env);
+            return Json.AsObject(await Send(HttpMethod.Get, path, (string)null, ct).ConfigureAwait(false));
+        }
+
+        /// <summary>
+        /// PUT /remote-config → the new version. <paramref name="entriesJson"/> is the <c>[{"key","type","value"}]</c> array;
+        /// 409 when <paramref name="baseVersion"/> is no longer the live one. A service token may publish dev / staging only.
+        /// </summary>
+        public async Task<long> PublishRemoteConfig(string project, string env, long baseVersion, string entriesJson, string note, CancellationToken ct)
+        {
+            var body = "{\"project\":" + Json.Quote(project) + ",\"env\":" + Json.Quote(env) +
+                       ",\"baseVersion\":" + baseVersion.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                       ",\"note\":" + Json.Quote(note ?? "") + ",\"entries\":" + entriesJson.Trim() + "}";
+            var o = Json.AsObject(await Send(HttpMethod.Put, "api/remote-config", body, ct).ConfigureAwait(false));
+            return Json.GetLong(o, "version", -1);
+        }
+
         /// <summary>
         /// PUT one file to a presigned URL with exactly the returned headers. Relative URLs (dev proxy) resolve
         /// against the portal and carry the portal auth headers; absolute URLs elsewhere (R2) never do.

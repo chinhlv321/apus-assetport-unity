@@ -16,10 +16,10 @@ Hướng dẫn đầy đủ (cấu hình Addressables, code client, quy trình r
 Thêm vào `Packages/manifest.json`:
 
 ```json
-"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.5.0"
+"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.6.0"
 ```
 
-Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.5.0`).
+Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.6.0`).
 
 ## Thiết lập
 
@@ -57,6 +57,7 @@ Chi tiết từng setting và lý do: [README mục 6](../../README.md#6-cấu-h
 - **Apus > Open ServerData Folder**: mở `ServerData/[BuildTarget]` của profile đang chọn (chưa build thì mở `ServerData`).
 - **Apus > Export Remote Config Defaults…**: ghi asset *Remote Config Defaults* (Assets > Create > Apus) ra file JSON để Import trên trang Remote config của portal.
 - **Apus > Remote Bundles…**: bundle của build gần nhất theo group; *Ping CDN* kiểm tra từng file đã có trên CDN chưa (HTTP + dung lượng). Bấm tên file để copy URL.
+- **Apus > Remote Config…**: xem remote config của dev / staging / prod; sửa và publish dev / staging bằng service token (prod chỉ xem, publish prod trên portal).
 - **Apus > Build & Upload…**
   - Chọn Android/iOS/WebGL, tên group, ghi chú và kiểu build:
     - *Content Update* (mặc định): Update a Previous Build, đọc `addressables_content_state.bin` trong `Assets/`.

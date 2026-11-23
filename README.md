@@ -163,13 +163,13 @@ Làm theo thứ tự. Mỗi bước có chi tiết ở các mục sau.
    ```json
    {
      "dependencies": {
-       "com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.5.0"
+       "com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.6.0"
      }
    }
    ```
    Hoặc **Window > Package Manager > + > Add package from git URL…**. Trang Settings của portal hiện sẵn dòng này để copy.
-   - Luôn ghim tag (`#v1.5.0`). Không ghim thì mỗi máy có thể kéo về một bản khác nhau.
-   - Repo private: máy build cần quyền đọc repo, ví dụ dùng SSH `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.5.0`.
+   - Luôn ghim tag (`#v1.6.0`). Không ghim thì mỗi máy có thể kéo về một bản khác nhau.
+   - Repo private: máy build cần quyền đọc repo, ví dụ dùng SSH `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.6.0`.
    - Package phụ thuộc `com.unity.addressables`. Nếu game đã có Addressables thì Unity dùng bản của game.
 2. **Setup Addressables** bằng JSON từ portal ([mục 4.2](#42-cấu-hình-unity-bằng-một-lần-dán)). Bước này điền luôn Project slug và Portal URL vào **Project Settings > Apus Asset Port**. Commit `ProjectSettings/ApusAssetPortSettings.asset` và `Assets/AddressableAssetsData/`.
 3. **Chia group** ([mục 6.3](#63-group)): những gì cần cho màn hình chờ và cần chạy offline → group local (*Prevent Updates*); content cập nhật được → group remote; content lớn chỉ cần khi người chơi yêu cầu → group remote riêng, có label.
@@ -340,6 +340,7 @@ var shop = JsonUtility.FromJson<ShopConfig>(config.GetJson("shop", "{}")); // ch
 | **Apus > Open ServerData Folder** | mở `ServerData/[BuildTarget]` của profile đang chọn trong Explorer/Finder (chưa build thì mở `ServerData`) |
 | **Apus > Export Remote Config Defaults…** | ghi asset Remote Config Defaults ra file JSON để Import trên portal ([mục 7.4](#74-remote-config)) |
 | **Apus > Remote Bundles…** | bundle của build gần nhất theo group; *Ping CDN* kiểm tra từng file đã có trên CDN và đúng dung lượng chưa; bấm tên file để copy URL |
+| **Apus > Remote Config…** | xem remote config của dev / staging / prod; sửa và publish dev / staging bằng service token (prod chỉ xem, publish prod trên portal) |
 | **Apus > Project Settings…** | slug, Portal URL, CDN/envPath, bật/tắt ghi manifest |
 
 Chỉ muốn build mà không upload: dùng nút build của cửa sổ Addressables Groups như bình thường. Package vẫn ghi manifest vào `ServerData/<platform>/`; sau đó kéo thả `ServerData/` vào trang **Upload** của portal ([mục 10.3](#103-upload)).
@@ -548,6 +549,7 @@ Addressables mặc định đúng các quy định này vì script phải có s�
 - 1.2.0 (WebGL) cần portal đã apply migration `0004_webgl_platform.sql`; portal cũ trả lỗi "platform phải là một trong Android, iOS" khi upload WebGL. Android/iOS không đổi.
 - 1.3.0 (remote config) cần portal có trang Remote config (migration `0005_remote_config.sql`). Phần Editor (Build & Upload, Remote Bundles) chạy với portal cũ.
 - 1.4.0: file Export Remote Config Defaults cần portal có nút **Import JSON** ở trang Remote config.
+- 1.6.0: cửa sổ **Apus > Remote Config…** cần portal cho service token đọc remote config và publish dev / staging (portal từ 2026-11-23). Phần còn lại chạy với portal cũ.
 
 ### Phát hành bản package mới (cho người bảo trì)
 

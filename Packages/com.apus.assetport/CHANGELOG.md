@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0] - 2026-11-23
+
+- Upload thử lại khi R2 trả `400 BadDigest` (body hỏng trên đường truyền), giống trang web.
+- Build & Upload giữ không cho Editor reload assembly trong lúc đang upload (sửa script giữa chừng không còn làm upload chạy lại).
+- Cửa sổ **Apus > Remote Config…**: xem remote config của dev / staging / prod và sửa rồi publish dev / staging ngay trong Editor (prod chỉ xem, publish prod trên portal). Cần portal bản mới: service token được đọc remote config và publish dev / staging.
+- Thêm EditMode test cho `Json` và `ManifestValidator` (cùng ca với `worker/test/shared.test.ts` của portal).
+
 ## [1.5.0] - 2026-11-05
 
 - `Remote.LoadPath` mới: `<cdn>/bundles/<project>/[BuildTarget]/[UnityEngine.Application.unityVersion]`. Addressables giữ nguyên tên bundle (hash) khi build lại cùng nội dung bằng Unity version khác, nhưng nội dung file khác, nên portal chặn upload ("same name but different content"). Mỗi Unity version giờ có thư mục bundle riêng trên CDN.

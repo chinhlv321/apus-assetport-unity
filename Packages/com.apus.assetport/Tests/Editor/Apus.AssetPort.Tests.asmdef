@@ -1,0 +1,25 @@
+{
+    "name": "Apus.AssetPort.Tests",
+    "rootNamespace": "Apus.AssetPort.Tests",
+    "references": [
+        "Apus.AssetPort",
+        "Apus.AssetPort.Editor",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
