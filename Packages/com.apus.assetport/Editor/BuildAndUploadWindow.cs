@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEditor.AddressableAssets;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -73,6 +74,16 @@ namespace Apus.AssetPort
             EditorGUILayout.LabelField("Project", string.IsNullOrEmpty(settings.projectSlug) ? "(chưa đặt)" : settings.projectSlug);
             EditorGUILayout.LabelField("Portal", string.IsNullOrEmpty(ApusCredentials.PortalUrl) ? "(chưa đặt)" : ApusCredentials.PortalUrl);
             EditorGUILayout.LabelField("App version", PlayerSettings.bundleVersion);
+            var aa = AddressableAssetSettingsDefaultObject.Settings;
+            if (aa != null)
+            {
+                var names = aa.profileSettings.GetAllProfileNames();
+                var current = names.IndexOf(aa.profileSettings.GetProfileName(aa.activeProfileId));
+                var picked = EditorGUILayout.Popup(new GUIContent("Profile",
+                    "Profile Addressables dùng để build. Bundle và catalog upload lên giống nhau ở mọi profile; profile quyết định player đọc catalog của env nào " +
+                    "(ghi vào player lúc build player, hoặc lúc build content nếu tắt Build Addressables on Player Build)."), current, names.ToArray());
+                if (picked != current && picked >= 0) BuildRunner.SetActiveProfile(names[picked]);
+            }
             if (GUILayout.Button("Project Settings > Apus Asset Port", EditorStyles.miniButton, GUILayout.Width(220)))
                 SettingsService.OpenProjectSettings(ApusAssetPortSettingsProvider.Path);
 

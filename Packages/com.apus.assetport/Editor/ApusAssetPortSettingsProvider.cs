@@ -27,7 +27,12 @@ namespace Apus.AssetPort
             s.projectSlug = EditorGUILayout.TextField(new GUIContent("Project slug", "Slug của project trên portal"), s.projectSlug).Trim();
             s.portalUrl = EditorGUILayout.TextField(new GUIContent("Portal URL", "https://admin.<domain> hoặc http://127.0.0.1:8787 khi chạy wrangler dev"), s.portalUrl).Trim();
             s.generateManifest = EditorGUILayout.Toggle(new GUIContent("Generate manifest", "Ghi apus-manifest.json sau mỗi lần build Addressables"), s.generateManifest);
+            EditorGUILayout.LabelField(new GUIContent("Bỏ qua cảnh báo (mỗi dòng một ID)",
+                "ID in trong [ ] ở cuối mỗi dòng [WARN] của Check Addressables Config, ví dụ bundle-naming. Cảnh báo có ID ở đây coi là OK. Lỗi [LỖI] không bỏ qua được."));
+            var ignored = EditorGUILayout.TextArea(string.Join("\n", s.ignoredChecks ?? new List<string>()), GUILayout.MinHeight(40));
+            s.ignoredChecks = new List<string>(ignored.Split('\n'));
             if (EditorGUI.EndChangeCheck()) s.SaveSettings();
+            // Empty lines are harmless (IsIgnored skips them) and kept so typing a new line works.
 
             if (!string.IsNullOrEmpty(s.projectSlug) && !ManifestValidator.IsValidSlug(s.projectSlug))
                 EditorGUILayout.HelpBox("Slug chỉ gồm a-z, 0-9, '-', 2–40 ký tự.", MessageType.Error);

@@ -20,11 +20,13 @@ namespace Apus.AssetPort
         public struct Check
         {
             public Status Status;
+            /// <summary>Stable name of the check; warnings are ignored by id (Project Settings > Apus Asset Port).</summary>
+            public string Id;
             public string Title;
             public string Hint;
 
             public override string ToString() =>
-                (Status == Status.Pass ? "[OK]   " : Status == Status.Warn ? "[WARN] " : "[LỖI]  ") + Title + (Status != Status.Pass && !string.IsNullOrEmpty(Hint) ? "\n         → " + Hint : "");
+                (Status == Status.Pass ? "[OK]   " : Status == Status.Warn ? "[WARN] " : "[LỖI]  ") + Title + (Status == Status.Warn ? "  [" + Id + "]" : "") + (Status != Status.Pass && !string.IsNullOrEmpty(Hint) ? "\n         → " + Hint : "");
         }
 
         [MenuItem("Apus/Check Addressables Config", priority = 20)]
@@ -36,33 +38,33 @@ namespace Apus.AssetPort
             var settings = AddressableAssetSettingsDefaultObject.Settings;
             var apus = ApusAssetPortSettings.instance;
 
-            Add(checks, ManifestValidator.IsValidSlug(apus.projectSlug), Status.Error,
+            Add(checks, "project-slug", ManifestValidator.IsValidSlug(apus.projectSlug), Status.Error,
                 "Project slug = '" + apus.projectSlug + "'",
                 "Đặt slug của project ở Project Settings > Apus Asset Port.");
 
             if (settings == null)
             {
-                Add(checks, false, Status.Error, "Có AddressableAssetSettings", "Mở Window > Asset Management > Addressables > Groups và tạo settings.");
+                Add(checks, "addressables-settings", false, Status.Error, "Có AddressableAssetSettings", "Mở Window > Asset Management > Addressables > Groups và tạo settings.");
                 return checks;
             }
 
             var target = EditorUserBuildSettings.activeBuildTarget.ToString();
             var appVersion = PlayerSettings.bundleVersion;
 
-            Add(checks, PortalConstants.IsPlatform(target), Status.Warn,
+            Add(checks, "build-target", PortalConstants.IsPlatform(target), Status.Warn,
                 "Active build target = " + target, "Portal chỉ nhận " + string.Join(", ", PortalConstants.Platforms) + ". Switch Platform trước khi build.");
-            Add(checks, ManifestValidator.IsValidAppVersion(appVersion), Status.Error,
+            Add(checks, "app-version", ManifestValidator.IsValidAppVersion(appVersion), Status.Error,
                 "App version (PlayerSettings.bundleVersion) = '" + appVersion + "'", "Chỉ gồm [0-9A-Za-z._-], tối đa 32 ký tự.");
 
-            Add(checks, settings.BuildRemoteCatalog, Status.Error,
+            Add(checks, "remote-catalog", settings.BuildRemoteCatalog, Status.Error,
                 "Build Remote Catalog đang bật", "Addressable Asset Settings > Catalog > Build Remote Catalog.");
 
-            Add(checks, settings.OverridePlayerVersion == "content", Status.Error,
+            Add(checks, "player-version", settings.OverridePlayerVersion == "content", Status.Error,
                 "Player Version Override = 'content' (đang là '" + settings.OverridePlayerVersion + "')",
                 "Addressable Asset Settings > Catalog > Player Version Override = content, để tên catalog cố định catalog_content.*");
 
 #if APUS_ADDRESSABLES_2
-            Add(checks, true, Status.Pass, "Định dạng catalog: " + (settings.EnableJsonCatalog ? "JSON (.json)" : "binary (.bin)"), null);
+            Add(checks, "catalog-format", true, Status.Pass, "Định dạng catalog: " + (settings.EnableJsonCatalog ? "JSON (.json)" : "binary (.bin)"), null);
 #endif
 
             string catalogBuild = null;
@@ -70,26 +72,30 @@ namespace Apus.AssetPort
             {
                 catalogBuild = Eval(settings, settings.RemoteCatalogBuildPath);
                 var catalogLoad = Eval(settings, settings.RemoteCatalogLoadPath);
-                Add(checks, catalogBuild != null && ContainsSegment(catalogBuild, target), Status.Warn,
+                Add(checks, "catalog-build-path", catalogBuild != null && ContainsSegment(catalogBuild, target), Status.Warn,
                     "Remote catalog build path chứa [BuildTarget]: " + catalogBuild,
                     "Đặt Build Path của remote catalog = ServerData/[BuildTarget] (giống Remote.BuildPath).");
-                Add(checks, catalogLoad != null && ContainsSegment(catalogLoad, target) && ContainsSegment(catalogLoad, appVersion), Status.Warn,
+                Add(checks, "catalog-load-path", catalogLoad != null && ContainsSegment(catalogLoad, target) && ContainsSegment(catalogLoad, appVersion), Status.Warn,
                     "Remote catalog load path chứa [BuildTarget] và appVersion: " + catalogLoad,
                     "Load Path của remote catalog = https://cdn.<domain>/live/<project>/<envPath>/[BuildTarget]/[UnityEngine.Application.version] (một profile cho mỗi env).");
                 if (catalogLoad != null && !catalogLoad.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                    Add(checks, false, Status.Warn, "Remote catalog load path dùng https", "iOS chặn http (ATS). Dùng https://cdn.<domain>/...");
+                    Add(checks, "catalog-https", false, Status.Warn, "Remote catalog load path dùng https", "iOS chặn http (ATS). Dùng https://cdn.<domain>/...");
             }
 
             var buildWithPlayer = settings.BuildAddressablesWithPlayerBuild;
             if (buildWithPlayer == AddressableAssetSettings.PlayerBuildOption.PreferencesValue)
-                Add(checks, false, Status.Warn, "Build Addressables on Player Build = theo Preferences",
+                Add(checks, "build-with-player", false, Status.Warn, "Build Addressables on Player Build = theo Preferences",
                     "Đặt Addressable Asset Settings > Build > Build Addressables on Player Build = 'Build Addressables content on Player Build' để mọi máy build giống nhau.");
             else
-                Add(checks, buildWithPlayer == AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer, Status.Warn,
-                    "Build Addressables on Player Build đang bật", "Addressable Asset Settings > Build > Build Addressables on Player Build.");
+                // Both explicit values are fine; off means content is built via Build & Upload before the player.
+                Add(checks, "build-with-player", true, Status.Warn,
+                    "Build Addressables on Player Build = " + (buildWithPlayer == AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer ? "bật" : "tắt (build content trước khi build player)"), "");
 
-            Add(checks, settings.CheckForContentUpdateRestrictionsOption == CheckForContentUpdateRestrictionsOptions.FailBuild, Status.Warn,
-                "Update a Previous Build > Check for Update Issues = Fail Build (đang là " + settings.CheckForContentUpdateRestrictionsOption + ")",
+            // "Giữ nguyên" in Setup Addressables is the project's explicit choice: don't nag about it.
+            Add(checks, "update-restrictions",
+                apus.setupKeepUpdateRestrictions || settings.CheckForContentUpdateRestrictionsOption == CheckForContentUpdateRestrictionsOptions.FailBuild, Status.Warn,
+                "Update a Previous Build > Check for Update Issues = Fail Build (đang là " + settings.CheckForContentUpdateRestrictionsOption +
+                (apus.setupKeepUpdateRestrictions ? ", giữ nguyên theo Setup" : "") + ")",
                 "Addressable Asset Settings > Update a Previous Build > Check For Update Issues = Fail Build.");
 
             CheckContentStatePath(settings, checks);
@@ -113,7 +119,9 @@ namespace Apus.AssetPort
             {
                 // invalid or remote path: underAssets stays false
             }
-            Add(checks, underAssets, Status.Warn, "Content State Build Path nằm trong Assets/: " + evaluated,
+            var keep = ApusAssetPortSettings.instance.setupKeepContentStatePath;
+            Add(checks, "content-state-path", underAssets || keep, Status.Warn,
+                "Content State Build Path nằm trong Assets/: " + evaluated + (keep && !underAssets ? " (giữ nguyên theo Setup)" : ""),
                 "Để trống Content State Build Path (mặc định Assets/AddressableAssetsData/<platform>) và commit addressables_content_state.bin.");
         }
 
@@ -144,12 +152,12 @@ namespace Apus.AssetPort
                 }
             }
 
-            Add(checks, remoteCount > 0, Status.Warn, "Có " + remoteCount + " group remote", "Tạo ít nhất 1 group dùng Remote.BuildPath/Remote.LoadPath.");
-            Add(checks, remoteBad.Count == 0, Status.Warn, "Group remote dùng Bundle Naming = Append Hash" + List(remoteBad),
+            Add(checks, "remote-groups", remoteCount > 0, Status.Warn, "Có " + remoteCount + " group remote", "Tạo ít nhất 1 group dùng Remote.BuildPath/Remote.LoadPath.");
+            Add(checks, "bundle-naming", remoteBad.Count == 0, Status.Warn, "Group remote dùng Bundle Naming = Append Hash" + List(remoteBad),
                 "Group > Advanced Options > Bundle Naming Mode = Append Hash to Filename. Không có hash thì bundle trùng tên nhưng khác nội dung sẽ bị portal chặn.");
-            Add(checks, remoteElsewhere.Count == 0, Status.Error, "Group remote build vào cùng thư mục với remote catalog" + List(remoteElsewhere),
+            Add(checks, "remote-build-dir", remoteElsewhere.Count == 0, Status.Error, "Group remote build vào cùng thư mục với remote catalog" + List(remoteElsewhere),
                 "Remote.BuildPath của group và Build Path của remote catalog phải giống nhau (ServerData/[BuildTarget]); bundle ở chỗ khác sẽ không vào manifest.");
-            Add(checks, localNotStatic.Count == 0, Status.Warn, "Group local bật Prevent Updates (Cannot Change Post Release)" + List(localNotStatic),
+            Add(checks, "local-prevent-updates", localNotStatic.Count == 0, Status.Warn, "Group local bật Prevent Updates (Cannot Change Post Release)" + List(localNotStatic),
                 "Group local > Content Update Restriction > bật Prevent Updates (xem README).");
         }
 
@@ -169,8 +177,20 @@ namespace Apus.AssetPort
             if (Run().Any(c => c.Status != Status.Pass)) RunAndLog(false);
         }
 
-        static void Add(List<Check> checks, bool ok, Status failStatus, string title, string hint) =>
-            checks.Add(new Check { Status = ok ? Status.Pass : failStatus, Title = title, Hint = hint });
+        static void Add(List<Check> checks, string id, bool ok, Status failStatus, string title, string hint)
+        {
+            // Project-chosen deviations (Project Settings > Apus Asset Port): warnings only, errors would break the upload.
+            if (!ok && failStatus == Status.Warn && IsIgnored(ApusAssetPortSettings.instance.ignoredChecks, id))
+            {
+                checks.Add(new Check { Status = Status.Pass, Id = id, Title = title + " (bỏ qua theo Project Settings)", Hint = hint });
+                return;
+            }
+            checks.Add(new Check { Status = ok ? Status.Pass : failStatus, Id = id, Title = title, Hint = hint });
+        }
+
+        /// <summary>True when <paramref name="id"/> is one of the ignored check ids (one per entry, case-insensitive).</summary>
+        public static bool IsIgnored(IEnumerable<string> ignored, string id) =>
+            ignored != null && ignored.Any(p => string.Equals((p ?? "").Trim(), id, StringComparison.OrdinalIgnoreCase));
 
         static string List(List<string> items) => items.Count == 0 ? "" : ": " + string.Join(", ", items);
 

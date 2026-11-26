@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -30,6 +31,19 @@ namespace Apus.AssetPort
 
         [Tooltip("envPath của staging trên portal, ví dụ staging-7f3k2q")]
         public string envPathStaging = "";
+
+        // Choices remembered by Apus > Setup Addressables… so a later Apply doesn't undo the project's customisations.
+        [Tooltip("Group bỏ qua khi Setup sửa group theo chuẩn")]
+        public List<string> setupSkipGroups = new List<string>();
+
+        [Tooltip("Setup giữ nguyên Content State Build Path (không đổi về mặc định)")]
+        public bool setupKeepContentStatePath;
+
+        [Tooltip("Setup giữ nguyên Check for Update Issues (không ép Fail Build)")]
+        public bool setupKeepUpdateRestrictions;
+
+        [Tooltip("ID các cảnh báo (WARN) của Check Addressables Config được bỏ qua, ví dụ bundle-naming. Lỗi không bỏ qua được.")]
+        public List<string> ignoredChecks = new List<string>();
 
         public void SaveSettings() => Save(true);
     }

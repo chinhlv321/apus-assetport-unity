@@ -260,6 +260,7 @@ namespace Apus.AssetPort
             s_State.summary.Add(string.Format(CultureInfo.InvariantCulture, "{0} {1} ({2}): release #{3}, upload {4} bundle ({5:0.0} MB), bỏ qua {6} bundle đã có",
                 r.Platform, r.AppVersion, r.Kind, r.ReleaseId, r.Uploaded, r.BytesUploaded / 1048576.0, r.Skipped));
             AddLog(s_State.summary[s_State.summary.Count - 1]);
+            ApusHooks.RaiseAfterUpload(r);
             s_State.index++;
             s_State.outputDir = null;
             s_State.phase = s_State.index < s_State.platforms.Count ? Phase.Switch : Phase.Complete;
@@ -297,6 +298,7 @@ namespace Apus.AssetPort
                 return;
             }
             AddLog("Đã chốt group #" + s_State.groupId + " (" + s_LastCompleteStatus + "). Chưa publish — publish trên portal.");
+            ApusHooks.RaiseAfterGroupCompleted(s_State.groupId, Uploader.GroupUrl(s_State.portalUrl, s_State.groupId));
             s_State.phase = Phase.Done;
             Save();
             DisposeClient();

@@ -67,6 +67,7 @@ namespace Apus.AssetPort
     public class ReleaseUploadResult
     {
         public long ReleaseId;
+        public long GroupId;
         public string Platform;
         public string AppVersion;
         public string Kind;
@@ -135,7 +136,7 @@ namespace Apus.AssetPort
             var extra = Directory.GetFiles(dir).Select(Path.GetFileName)
                 .Where(n => n != PortalConstants.ManifestFileName && !paths.ContainsKey(n)).ToList();
 
-            var result = new ReleaseUploadResult { Platform = manifest.platform, AppVersion = manifest.appVersion, Kind = manifest.kind };
+            var result = new ReleaseUploadResult { GroupId = groupId, Platform = manifest.platform, AppVersion = manifest.appVersion, Kind = manifest.kind };
             if (extra.Count > 0) result.Warnings.Add("Bỏ qua " + extra.Count + " file không có trong manifest: " + string.Join(", ", extra.Take(10)) + (extra.Count > 10 ? ", …" : ""));
 
             // Step 2 (idempotent: replaces a draft release of the same platform + appVersion in this group)

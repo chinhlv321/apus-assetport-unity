@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.7.0] - 2026-11-26
+
+- **Setup Addressables** có thêm tuỳ chọn: tắt *Build Addressables on Player Build* (không build lại content mỗi lần build player, ví dụ khi chỉ nâng version code), chọn group được sửa theo chuẩn, *Giữ nguyên* Content State Build Path và Check for Update Issues. Cửa sổ mở lên lấy giá trị hiện tại của project và nhớ lựa chọn, nên Apply lại không ghi đè phần đã custom.
+- Khi tắt *Build Addressables on Player Build*: build player bị chặn nếu content đã build trỏ tới catalog của profile (env) hoặc app version khác, kèm hướng dẫn build lại content.
+- **Build & Upload** có ô **Profile**. CLI có `-profile dev|staging|prod`.
+- `ApusHooks`: `BeforeBuild` (throw để hủy), `AfterBuild`, `AfterUpload`, `AfterGroupCompleted` cho code của project. `ReleaseUploadResult` có thêm `GroupId`.
+- **Check Addressables Config**: mỗi cảnh báo có ID (in trong `[ ]`); bỏ qua cảnh báo theo ID ở Project Settings > Apus Asset Port. Lỗi không bỏ qua được. *Build Addressables on Player Build* tắt không còn bị cảnh báo.
+- `AddressablesSetup.Options` thêm `DoNotBuildWithPlayer`, `SkipGroups`, `KeepContentStatePath`, `KeepUpdateRestrictions` (mặc định giữ hành vi cũ).
+
 ## [1.6.0] - 2026-11-23
 
 - Upload thử lại khi R2 trả `400 BadDigest` (body hỏng trên đường truyền), giống trang web.

@@ -163,13 +163,13 @@ Làm theo thứ tự. Mỗi bước có chi tiết ở các mục sau.
    ```json
    {
      "dependencies": {
-       "com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.6.0"
+       "com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.7.0"
      }
    }
    ```
    Hoặc **Window > Package Manager > + > Add package from git URL…**. Trang Settings của portal hiện sẵn dòng này để copy.
-   - Luôn ghim tag (`#v1.6.0`). Không ghim thì mỗi máy có thể kéo về một bản khác nhau.
-   - Repo private: máy build cần quyền đọc repo, ví dụ dùng SSH `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.6.0`.
+   - Luôn ghim tag (`#v1.7.0`). Không ghim thì mỗi máy có thể kéo về một bản khác nhau.
+   - Repo private: máy build cần quyền đọc repo, ví dụ dùng SSH `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.7.0`.
    - Package phụ thuộc `com.unity.addressables`. Nếu game đã có Addressables thì Unity dùng bản của game.
 2. **Setup Addressables** bằng JSON từ portal ([mục 4.2](#42-cấu-hình-unity-bằng-một-lần-dán)). Bước này điền luôn Project slug và Portal URL vào **Project Settings > Apus Asset Port**. Commit `ProjectSettings/ApusAssetPortSettings.asset` và `Assets/AddressableAssetsData/`.
 3. **Chia group** ([mục 6.3](#63-group)): những gì cần cho màn hình chờ và cần chạy offline → group local (*Prevent Updates*); content cập nhật được → group remote; content lớn chỉ cần khi người chơi yêu cầu → group remote riêng, có label.
@@ -204,7 +204,7 @@ Làm theo thứ tự. Mỗi bước có chi tiết ở các mục sau.
 | Build Remote Catalog | bật | game đọc catalog từ CDN |
 | Remote catalog: Build Path / Load Path | `Remote.BuildPath` / `Apus.CatalogLoadPath` | catalog và bundle remote cùng thư mục; load path theo env |
 | Player Version Override | `content` | tên catalog cố định `catalog_content.*`, portal nhận diện theo tên |
-| Build Addressables on Player Build | *Build Addressables content on Player Build* | mọi máy build giống nhau |
+| Build Addressables on Player Build | *Build Addressables content on Player Build* (mặc định), hoặc *Do not Build* nếu không muốn mỗi lần lên version code lại phải upload catalog mới | đặt tường minh để mọi máy build giống nhau. Chọn *Do not Build* thì phải build content (Build & Upload) trước khi build player, xem [6.4](#64-build-player-theo-env) |
 | Check for Update Issues | **Fail Build** | chặn content update phá bản app đang chạy |
 | Content State Build Path | để trống (mặc định `Assets/AddressableAssetsData/<platform>/`) | phải commit được, **không** đặt trong `Library/` |
 | Only update catalogs manually | **bật** (khuyên dùng) | game tự gọi `CheckForCatalogUpdates` lúc khởi động, hiện được tiến trình và xử lý mất mạng. Tắt thì Addressables tự đổi catalog ngầm trong `InitializeAsync`, và bước kiểm tra sau đó không còn thấy gì |
@@ -229,7 +229,14 @@ Catalog load path được ghi vào player lúc build, nên mỗi env cần mộ
 - Bản QA/test nội bộ: build với profile **`staging`**.
 - Bản lên store (kể cả TestFlight, Play internal track): build với profile **`prod`**.
 
-Content build thì **dùng chung cho mọi env** (đường dẫn bundle không chứa env); build bằng profile nào cũng được.
+Bundle và catalog upload lên portal thì **dùng chung cho mọi env** (đường dẫn bundle không chứa env); build bằng profile nào cũng được.
+
+**Khi tắt Build Addressables on Player Build** (*Do not Build*): catalog load path được ghi lúc build **content** (file `Library/com.unity.addressables/aa/<platform>/settings.json`), không phải lúc build player. Vì vậy phải build lại content trước khi build player mỗi khi:
+
+- đổi profile (ví dụ từ `staging` sang `prod`);
+- đổi app version (`PlayerSettings.bundleVersion`). Chỉ nâng version code / build number thì không cần.
+
+Package tự kiểm tra việc này: build player bị chặn với thông báo nêu rõ catalog đang trỏ tới đâu và cần trỏ tới đâu, thay vì ra một bản app đọc nhầm catalog của env hoặc version khác. Cửa sổ *Build & Upload* có ô **Profile** để chọn profile trước khi build content.
 
 iOS bắt buộc HTTPS (App Transport Security). `cdn.<domain>` đã là HTTPS nên không cần ngoại lệ ATS.
 
@@ -368,6 +375,7 @@ Unity -batchmode -nographics -projectPath . -buildTarget iOS -logFile - \
 | `-groupKey <key>` | các job cùng key vào chung một group nháp (thường là commit hash), nên job Android và iOS chạy song song được |
 | `-groupName`, `-note` | tên và ghi chú của group trên portal |
 | `-kind update\|baseline` | mặc định `update` |
+| `-profile dev\|staging\|prod` | profile Addressables đặt active trước khi build; không truyền thì dùng profile đang chọn trong project |
 | `-complete` | job cuối cùng truyền cờ này để chốt group |
 
 - **Không truyền `-quit`.** Lệnh tự thoát: mã 0 khi thành công, 1 khi lỗi.
@@ -375,6 +383,7 @@ Unity -batchmode -nographics -projectPath . -buildTarget iOS -logFile - \
 - Windows PowerShell đặt biến môi trường bằng `$env:APUS_PORTAL_URL="https://admin.<domain>"; & "C:\Program Files\Unity\Hub\Editor\<version>\Editor\Unity.exe" ...`.
 - `Apus.AssetPort.Cli.WriteManifestOnly -kind baseline|update` chỉ build và ghi manifest, không upload.
 - Cấu hình bằng script (ví dụ dựng project mới trên CI): `AddressablesSetup.Apply(new PortalSetupConfig { … }, new AddressablesSetup.Options { ActiveProfile = "prod", FixGroups = true, ManualCatalogUpdate = true })`.
+- Thêm bước riêng trước/sau build, sau upload hoặc sau khi chốt group (đổi setting, báo Slack kèm link group, …) qua `ApusHooks.BeforeBuild` / `AfterBuild` / `AfterUpload` / `AfterGroupCompleted`, xem [README của package](Packages/com.apus.assetport/README.md).
 - Group nháp không được chốt sau 24 giờ không hoạt động sẽ bị portal tự xoá.
 
 ---
@@ -550,6 +559,7 @@ Addressables mặc định đúng các quy định này vì script phải có s�
 - 1.3.0 (remote config) cần portal có trang Remote config (migration `0005_remote_config.sql`). Phần Editor (Build & Upload, Remote Bundles) chạy với portal cũ.
 - 1.4.0: file Export Remote Config Defaults cần portal có nút **Import JSON** ở trang Remote config.
 - 1.6.0: cửa sổ **Apus > Remote Config…** cần portal cho service token đọc remote config và publish dev / staging (portal từ 2026-11-23). Phần còn lại chạy với portal cũ.
+- 1.7.0: không cần portal mới (chỉ đổi phần Editor).
 
 ### Phát hành bản package mới (cho người bảo trì)
 

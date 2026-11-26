@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
@@ -118,6 +119,17 @@ namespace Apus.AssetPort
             /// silently switches catalog during init and CheckForCatalogUpdates then finds nothing.
             /// </summary>
             public bool ManualCatalogUpdate;
+            /// <summary>
+            /// "Build Addressables on Player Build" off (default false = on, as before): player builds skip Addressables, so
+            /// bumping the version code doesn't produce new bundles/catalog to upload; build content via Build &amp; Upload when it changes.
+            /// </summary>
+            public bool DoNotBuildWithPlayer;
+            /// <summary>Group names left untouched by <see cref="FixGroups"/>.</summary>
+            public ICollection<string> SkipGroups;
+            /// <summary>Keep the current Content State Build Path instead of resetting it to the default.</summary>
+            public bool KeepContentStatePath;
+            /// <summary>Keep the current Check for Update Issues instead of forcing Fail Build.</summary>
+            public bool KeepUpdateRestrictions;
         }
 
         /// <summary>Applies <paramref name="config"/>; returns a log of what changed. Throws on invalid config.</summary>
@@ -135,14 +147,17 @@ namespace Apus.AssetPort
             apus.cdnBaseUrl = config.CdnBase;
             apus.envPathDev = config.EnvPathDev;
             apus.envPathStaging = config.EnvPathStaging;
+            apus.setupSkipGroups = new List<string>(options.SkipGroups ?? Array.Empty<string>());
+            apus.setupKeepContentStatePath = options.KeepContentStatePath;
+            apus.setupKeepUpdateRestrictions = options.KeepUpdateRestrictions;
             apus.SaveSettings();
             log.Add("Project Settings > Apus Asset Port: slug " + config.Project + (string.IsNullOrEmpty(config.PortalUrl) ? "" : ", portal " + apus.portalUrl));
 
             ApplyProfiles(settings, config, string.IsNullOrEmpty(options.ActiveProfile) ? "staging" : options.ActiveProfile, log);
-            ApplyCatalogSettings(settings, log);
+            ApplyCatalogSettings(settings, options, log);
             settings.DisableCatalogUpdateOnStartup = options.ManualCatalogUpdate;
             log.Add("Only update catalogs manually = " + (options.ManualCatalogUpdate ? "bật (game tự gọi CheckForCatalogUpdates)" : "tắt (Addressables tự cập nhật lúc khởi động)"));
-            if (options.FixGroups) ApplyGroups(settings, log);
+            if (options.FixGroups) ApplyGroups(settings, options.SkipGroups, log);
 
             EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssets();
@@ -183,30 +198,48 @@ namespace Apus.AssetPort
             }
         }
 
-        static void ApplyCatalogSettings(AddressableAssetSettings settings, List<string> log)
+        static void ApplyCatalogSettings(AddressableAssetSettings settings, Options options, List<string> log)
         {
             settings.BuildRemoteCatalog = true;
             settings.RemoteCatalogBuildPath.SetVariableByName(settings, RemoteBuildPathVar);
             settings.RemoteCatalogLoadPath.SetVariableByName(settings, CatalogLoadPathVar);
             settings.OverridePlayerVersion = "content";
-            settings.BuildAddressablesWithPlayerBuild = AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer;
-            settings.CheckForContentUpdateRestrictionsOption = CheckForContentUpdateRestrictionsOptions.FailBuild;
+            var buildWithPlayer = !options.DoNotBuildWithPlayer;
+            settings.BuildAddressablesWithPlayerBuild = buildWithPlayer
+                ? AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer
+                : AddressableAssetSettings.PlayerBuildOption.DoNotBuildWithPlayer;
+            if (!options.KeepUpdateRestrictions) settings.CheckForContentUpdateRestrictionsOption = CheckForContentUpdateRestrictionsOptions.FailBuild;
             // A custom path would leave the existing content state behind: say so, the next update needs it.
-            if (!string.IsNullOrEmpty(settings.ContentStateBuildPath))
+            if (options.KeepContentStatePath)
+                log.Add("Content State Build Path: giữ nguyên '" + settings.ContentStateBuildPath + "'");
+            else if (!string.IsNullOrEmpty(settings.ContentStateBuildPath))
                 log.Add("⚠ Content State Build Path '" + settings.ContentStateBuildPath + "' đổi về mặc định Assets/AddressableAssetsData/<platform>: " +
                         "chuyển addressables_content_state.bin sang đó (và commit) trước khi build content update, nếu không update sẽ báo thiếu content state.");
-            settings.ContentStateBuildPath = ""; // default: Assets/AddressableAssetsData/<platform>, commit it
+            if (!options.KeepContentStatePath) settings.ContentStateBuildPath = ""; // default: Assets/AddressableAssetsData/<platform>, commit it
             log.Add("Remote catalog: bật, Build Path = " + RemoteBuildPathVar + ", Load Path = " + CatalogLoadPathVar);
-            log.Add("Player Version Override = content, Build Addressables on Player Build = bật, Check for Update Issues = Fail Build");
+            log.Add("Player Version Override = content, Build Addressables on Player Build = " + (buildWithPlayer ? "bật" : "tắt") +
+                    ", Check for Update Issues = " + (options.KeepUpdateRestrictions ? "giữ nguyên (" + settings.CheckForContentUpdateRestrictionsOption + ")" : "Fail Build"));
         }
 
-        static void ApplyGroups(AddressableAssetSettings settings, List<string> log)
+        /// <summary>Groups that "fix groups" can touch: editable, with a BundledAssetGroupSchema.</summary>
+        public static IEnumerable<AddressableAssetGroup> FixableGroups(AddressableAssetSettings settings)
         {
+            if (settings == null) yield break;
             foreach (var group in settings.groups)
+                if (group != null && !group.ReadOnly && group.GetSchema<BundledAssetGroupSchema>() != null) // ReadOnly: built-in "Built In Data"
+                    yield return group;
+        }
+
+        static void ApplyGroups(AddressableAssetSettings settings, ICollection<string> skip, List<string> log)
+        {
+            foreach (var group in FixableGroups(settings).ToList())
             {
-                if (group == null || group.ReadOnly) continue; // ReadOnly: the built-in "Built In Data" group
+                if (skip != null && skip.Contains(group.Name))
+                {
+                    log.Add("Group " + group.Name + ": bỏ qua (giữ nguyên)");
+                    continue;
+                }
                 var bundled = group.GetSchema<BundledAssetGroupSchema>();
-                if (bundled == null) continue;
                 if (IsRemote(settings, bundled))
                 {
                     var changed = false;
@@ -263,6 +296,11 @@ namespace Apus.AssetPort
         string m_PasteError;
         bool m_FixGroups = true;
         bool m_ManualCatalogUpdate = true;
+        bool m_BuildWithPlayer = true;
+        bool m_KeepContentStatePath;
+        bool m_KeepUpdateRestrictions;
+        HashSet<string> m_SkipGroups = new HashSet<string>();
+        bool m_GroupsFoldout;
         int m_ActiveProfile = 1; // staging
         List<string> m_Log;
         Vector2 m_Scroll;
@@ -275,7 +313,23 @@ namespace Apus.AssetPort
             w.Show();
         }
 
-        void OnEnable() => m_Config = PortalSetupConfig.FromSettings(ApusAssetPortSettings.instance);
+        void OnEnable()
+        {
+            m_Config = PortalSetupConfig.FromSettings(ApusAssetPortSettings.instance);
+            var apus = ApusAssetPortSettings.instance;
+            m_SkipGroups = new HashSet<string>(apus.setupSkipGroups ?? new List<string>());
+            m_KeepContentStatePath = apus.setupKeepContentStatePath;
+            m_KeepUpdateRestrictions = apus.setupKeepUpdateRestrictions;
+            // Start from the project's current values so re-running Apply doesn't silently flip them.
+            var settings = AddressableAssetSettingsDefaultObject.Settings;
+            if (settings == null) return;
+            m_BuildWithPlayer = settings.BuildAddressablesWithPlayerBuild != AddressableAssetSettings.PlayerBuildOption.DoNotBuildWithPlayer;
+            // First setup (no Apus profiles yet): keep the recommended default instead of Addressables' own.
+            if (!string.IsNullOrEmpty(settings.profileSettings.GetProfileId(AddressablesSetup.Envs[2])))
+                m_ManualCatalogUpdate = settings.DisableCatalogUpdateOnStartup;
+            var active = Array.IndexOf(AddressablesSetup.Envs, settings.profileSettings.GetProfileName(settings.activeProfileId));
+            if (active >= 0) m_ActiveProfile = active;
+        }
 
         void OnGUI()
         {
@@ -321,10 +375,24 @@ namespace Apus.AssetPort
             m_FixGroups = EditorGUILayout.ToggleLeft(
                 new GUIContent("Sửa group theo chuẩn (remote: Append Hash + Remote.*; local: Prevent Updates)",
                     "Không đổi asset nào, chỉ đổi schema của group."), m_FixGroups);
+            if (m_FixGroups) DrawGroupList();
             m_ManualCatalogUpdate = EditorGUILayout.ToggleLeft(
                 new GUIContent("Only update catalogs manually (game tự kiểm tra content mới lúc khởi động, xem README mục 7)",
                     "Bật: InitializeAsync dùng catalog đã cache, game gọi CheckForCatalogUpdates/UpdateCatalogs để hiện tiến trình và xử lý mất mạng. " +
                     "Tắt: Addressables tự đổi catalog trong InitializeAsync."), m_ManualCatalogUpdate);
+            m_BuildWithPlayer = EditorGUILayout.ToggleLeft(
+                new GUIContent("Build Addressables on Player Build",
+                    "Bật: mỗi lần build player build luôn Addressables (lên version code là có catalog mới phải upload). " +
+                    "Tắt: build player không đụng tới Addressables; build content bằng Build & Upload trước khi build player."), m_BuildWithPlayer);
+            if (!m_BuildWithPlayer)
+                EditorGUILayout.HelpBox("Build player sẽ dùng content đã build sẵn trong Library. Build lại content (Build & Upload) trước khi build player mỗi khi đổi content, " +
+                    "đổi profile (env) hoặc đổi app version: URL catalog được ghi lúc build content. Lệch thì build player bị chặn kèm hướng dẫn.", MessageType.None);
+            m_KeepContentStatePath = EditorGUILayout.ToggleLeft(
+                new GUIContent("Giữ nguyên Content State Build Path",
+                    "Tắt: đổi về mặc định Assets/AddressableAssetsData/<platform> (commit được). Bật: giữ path riêng của project, tự đảm bảo addressables_content_state.bin không mất."), m_KeepContentStatePath);
+            m_KeepUpdateRestrictions = EditorGUILayout.ToggleLeft(
+                new GUIContent("Giữ nguyên Check for Update Issues",
+                    "Tắt: ép Fail Build (chặn content update phá bản app đang chạy). Bật: giữ giá trị hiện tại."), m_KeepUpdateRestrictions);
 
             var errors = m_Config.Validate();
             foreach (var w in m_Config.Warnings()) EditorGUILayout.HelpBox(w, MessageType.Warning);
@@ -345,6 +413,10 @@ namespace Apus.AssetPort
                         ActiveProfile = AddressablesSetup.Envs[m_ActiveProfile],
                         FixGroups = m_FixGroups,
                         ManualCatalogUpdate = m_ManualCatalogUpdate,
+                        DoNotBuildWithPlayer = !m_BuildWithPlayer,
+                        SkipGroups = m_SkipGroups,
+                        KeepContentStatePath = m_KeepContentStatePath,
+                        KeepUpdateRestrictions = m_KeepUpdateRestrictions,
                     });
                     Debug.Log("[Apus] Setup Addressables:\n" + string.Join("\n", m_Log));
                     ConfigChecker.RunAndLog(true);
@@ -360,6 +432,26 @@ namespace Apus.AssetPort
                 EditorGUILayout.EndHorizontal();
             }
             EditorGUILayout.EndScrollView();
+        }
+
+        void DrawGroupList()
+        {
+            var groups = AddressablesSetup.FixableGroups(AddressableAssetSettingsDefaultObject.Settings).ToList();
+            if (groups.Count == 0) return;
+            EditorGUI.indentLevel++;
+            m_GroupsFoldout = EditorGUILayout.Foldout(m_GroupsFoldout,
+                "Group được sửa (" + groups.Count(g => !m_SkipGroups.Contains(g.Name)) + "/" + groups.Count + ")", true);
+            if (m_GroupsFoldout)
+            {
+                foreach (var g in groups)
+                {
+                    var on = !m_SkipGroups.Contains(g.Name);
+                    if (EditorGUILayout.ToggleLeft(g.Name, on) == on) continue;
+                    if (on) m_SkipGroups.Add(g.Name);
+                    else m_SkipGroups.Remove(g.Name);
+                }
+            }
+            EditorGUI.indentLevel--;
         }
 
         static string Preview(PortalSetupConfig c)

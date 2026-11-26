@@ -11,8 +11,9 @@ namespace Apus.AssetPort
     /// Batch-mode entry points for CI:
     /// <code>
     /// Unity -batchmode -nographics -projectPath . -buildTarget Android -logFile - \
-    ///   -executeMethod Apus.AssetPort.Cli.BuildAndUpload -groupKey $COMMIT [-groupName ..] [-note ..] [-kind update|baseline] [-complete]
+    ///   -executeMethod Apus.AssetPort.Cli.BuildAndUpload -groupKey $COMMIT [-groupName ..] [-note ..] [-kind update|baseline] [-profile dev|staging|prod] [-complete]
     /// </code>
+    /// <c>-profile</c>: Addressables profile made active before building (default: the active one in the project).
     /// Credentials: env APUS_PORTAL_URL (optional, overrides settings), APUS_CLIENT_ID, APUS_CLIENT_SECRET.
     /// Exits with 0 on success, 1 on failure.
     /// </summary>
@@ -38,9 +39,12 @@ namespace Apus.AssetPort
             var code = 1;
             try
             {
-                var outcome = BuildRunner.Build(Kind());
-                outcome.Log();
-                code = outcome.Ok ? 0 : 1;
+                if (ApplyProfile())
+                {
+                    var outcome = BuildRunner.Build(Kind());
+                    outcome.Log();
+                    code = outcome.Ok ? 0 : 1;
+                }
             }
             catch (Exception e)
             {
@@ -69,6 +73,7 @@ namespace Apus.AssetPort
                 return false;
             }
 
+            if (!ApplyProfile()) return false;
             var outcome = BuildRunner.Build(kind);
             outcome.Log();
             if (!outcome.Ok) return false;
@@ -78,16 +83,19 @@ namespace Apus.AssetPort
             using (var client = new PortalClient(portal, ApusCredentials.ClientId, ApusCredentials.ClientSecret, ApusCredentials.DevEmail))
             {
                 var progress = new UploadProgress();
+                ReleaseUploadResult uploaded = null;
+                long completedGroupId = 0;
                 var task = Task.Run(async () =>
                 {
                     var groupId = await Uploader.EnsureGroup(client, project, groupName, note, groupKey, CancellationToken.None).ConfigureAwait(false);
                     Debug.Log("[Apus] Group #" + groupId + " (" + Uploader.GroupUrl(portal, groupId) + ")");
-                    var result = await Uploader.UploadRelease(client, groupId, outcome.OutputDir, progress, m => Debug.Log("[Apus] " + m), CancellationToken.None).ConfigureAwait(false);
+                    var result = uploaded = await Uploader.UploadRelease(client, groupId, outcome.OutputDir, progress, m => Debug.Log("[Apus] " + m), CancellationToken.None).ConfigureAwait(false);
                     foreach (var w in result.Warnings) Debug.LogWarning("[Apus] " + w);
                     Debug.Log("[Apus] " + result.Platform + ": upload " + result.Uploaded + " bundle, bỏ qua " + result.Skipped + " bundle đã có, release #" + result.ReleaseId);
                     if (complete)
                     {
                         var status = await Uploader.CompleteGroup(client, groupId, CancellationToken.None).ConfigureAwait(false);
+                        completedGroupId = groupId;
                         Debug.Log("[Apus] Đã chốt group #" + groupId + " → " + status + ". Publish trên portal: " + Uploader.GroupUrl(portal, groupId));
                     }
                     else
@@ -97,8 +105,25 @@ namespace Apus.AssetPort
                 });
                 // Upload code never touches the main thread, so blocking here cannot deadlock.
                 task.GetAwaiter().GetResult();
+                // Raised here, on the main thread, after the upload (and -complete) finished.
+                if (uploaded != null) ApusHooks.RaiseAfterUpload(uploaded);
+                if (completedGroupId > 0) ApusHooks.RaiseAfterGroupCompleted(completedGroupId, Uploader.GroupUrl(portal, completedGroupId));
             }
             return true;
+        }
+
+        /// <summary>Applies <c>-profile</c> when given; false (and logs) when the profile doesn't exist.</summary>
+        static bool ApplyProfile()
+        {
+            var profile = Arg("-profile");
+            if (string.IsNullOrEmpty(profile)) return true;
+            if (BuildRunner.SetActiveProfile(profile))
+            {
+                Debug.Log("[Apus] Profile Addressables: " + profile);
+                return true;
+            }
+            Debug.LogError("[Apus] Không có profile Addressables '" + profile + "' (chạy Apus > Setup Addressables… để tạo dev/staging/prod).");
+            return false;
         }
 
         static string Kind()

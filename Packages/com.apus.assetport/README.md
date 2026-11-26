@@ -16,10 +16,10 @@ Hướng dẫn đầy đủ (cấu hình Addressables, code client, quy trình r
 Thêm vào `Packages/manifest.json`:
 
 ```json
-"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.6.0"
+"com.apus.assetport": "https://github.com/chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.7.0"
 ```
 
-Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.6.0`).
+Nếu repo private, máy build cần quyền đọc repo (ví dụ SSH: `git@github.com:chinhlv321/apus-assetport-unity.git?path=/Packages/com.apus.assetport#v1.7.0`).
 
 ## Thiết lập
 
@@ -43,11 +43,31 @@ Khi portal chạy ở localhost, có thể nhập *Dev email* thay cho token. Pa
 2. Dán vào cửa sổ, bấm *Đọc cấu hình* rồi *Apply*. Công cụ sẽ:
    - tạo hoặc cập nhật 3 profile `dev`/`staging`/`prod` với `Remote.BuildPath` = `ServerData/[BuildTarget]`, `Remote.LoadPath` = `<cdn>/bundles/<project>/[BuildTarget]/[UnityEngine.Application.unityVersion]` và `Apus.CatalogLoadPath` = `<cdn>/live/<project>/<envPath>/[BuildTarget]/[UnityEngine.Application.version]`;
    - bật Build Remote Catalog, đặt Build Path = `Remote.BuildPath` và Load Path = `Apus.CatalogLoadPath` (không dùng *Custom*, vì giá trị Custom dùng chung cho mọi profile);
-   - đặt Player Version Override = `content`, Build Addressables on Player Build, Check for Update Issues = Fail Build, Content State Build Path mặc định;
-   - tuỳ chọn: sửa group theo chuẩn (remote: Append Hash + `Remote.*`; local: Prevent Updates), và bật *Only update catalogs manually* (khuyên dùng, xem [README mục 7](../../README.md#7-code-phía-client));
+   - đặt Player Version Override = `content`, Build Addressables on Player Build (bật/tắt tuỳ chọn), Check for Update Issues = Fail Build, Content State Build Path mặc định (hai giá trị cuối có tuỳ chọn *Giữ nguyên*);
+   - tuỳ chọn: sửa group theo chuẩn (remote: Append Hash + `Remote.*`; local: Prevent Updates; bỏ chọn group nào thì group đó giữ nguyên), và bật *Only update catalogs manually* (khuyên dùng, xem [README mục 7](../../README.md#7-code-phía-client));
    - điền Project slug, Portal URL, CDN và envPath vào Project Settings, rồi chạy *Check Addressables Config*.
 
-Chạy lại bao nhiêu lần cũng được: công cụ chỉ ghi đè các giá trị nó quản lý. Gọi bằng script hoặc CI: `AddressablesSetup.Apply(new PortalSetupConfig { Project, PortalUrl, CdnBaseUrl, EnvPathDev, EnvPathStaging }, new AddressablesSetup.Options { ActiveProfile = "staging", FixGroups = true, ManualCatalogUpdate = true })`.
+Chạy lại bao nhiêu lần cũng được: công cụ chỉ ghi đè các giá trị nó quản lý. Cửa sổ mở lên lấy giá trị hiện tại của project (profile, Only update catalogs manually, Build on Player Build) và nhớ các lựa chọn *Giữ nguyên* / group bỏ qua trong Project Settings, nên Apply lại không làm mất phần đã custom. Gọi bằng script hoặc CI: `AddressablesSetup.Apply(new PortalSetupConfig { Project, PortalUrl, CdnBaseUrl, EnvPathDev, EnvPathStaging }, new AddressablesSetup.Options { ActiveProfile = "staging", FixGroups = true, ManualCatalogUpdate = true })`; thêm `DoNotBuildWithPlayer`, `SkipGroups`, `KeepContentStatePath`, `KeepUpdateRestrictions` khi cần.
+
+**Bỏ qua cảnh báo**: Project Settings > Apus Asset Port > *Bỏ qua cảnh báo*, mỗi dòng một ID. ID in trong `[ ]` ở cuối mỗi dòng `[WARN]` của *Check Addressables Config* (ví dụ `bundle-naming`, `local-prevent-updates`). Cảnh báo có ID trong danh sách coi là OK; lỗi `[LỖI]` không bỏ qua được. Hai tuỳ chọn *Giữ nguyên* của Setup tự tắt cảnh báo tương ứng, không cần thêm ID.
+
+**Tắt Build Addressables on Player Build**: build player dùng content đã build sẵn, nên URL catalog (env + app version) là của lần build content gần nhất. Build player bị chặn nếu URL đó không khớp profile và app version hiện tại; build lại content rồi build player. Chi tiết: [README mục 6.4](../../README.md#64-build-player-theo-env).
+
+**Hook cho code của project** (Editor assembly tham chiếu `Apus.AssetPort.Editor`), chạy trên main thread cả ở cửa sổ Build & Upload lẫn CLI:
+
+```csharp
+[InitializeOnLoad]
+static class MyApusHooks
+{
+    static MyApusHooks()
+    {
+        ApusHooks.BeforeBuild += kind => { /* throw để hủy build */ };
+        ApusHooks.AfterBuild += outcome => { if (outcome.Ok) Debug.Log(outcome.OutputDir); };
+        ApusHooks.AfterUpload += r => Debug.Log(r.Platform + " release #" + r.ReleaseId + " group #" + r.GroupId);
+        ApusHooks.AfterGroupCompleted += (groupId, url) => Debug.Log("Group đã chốt: " + url);
+    }
+}
+```
 
 Chi tiết từng setting và lý do: [README mục 6](../../README.md#6-cấu-hình-addressables-chi-tiết).
 
